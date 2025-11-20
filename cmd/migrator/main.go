@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/iskanye/avito-tech-internship/internal/config"
 )
@@ -41,7 +41,7 @@ func main() {
 
 	m, err := migrate.New(
 		"file://"+migrationsPath,
-		fmt.Sprintf("postgres://%s?x-migrations-table=%s&sslmode=disable", uri, migrationsTable),
+		fmt.Sprintf("pgx5://%s?x-migrations-table=%s&sslmode=disable", uri, migrationsTable),
 	)
 	if err != nil {
 		panic(err)

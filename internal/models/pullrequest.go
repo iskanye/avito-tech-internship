@@ -2,16 +2,18 @@ package models
 
 import "time"
 
+type PRStatus = string
+
 const (
-	PULLREQUEST_OPEN   = "OPEN"
-	PULLREQUEST_MERGED = "MERGED"
+	PULLREQUEST_OPEN   PRStatus = "OPEN"
+	PULLREQUEST_MERGED PRStatus = "MERGED"
 )
 
 type PullRequest struct {
 	ID                string
 	Name              string
 	AuthorID          string
-	Status            string
+	Status            PRStatus
 	AssignedReviewers []string
 	CreatedAt         *time.Time
 	MergedAt          *time.Time
