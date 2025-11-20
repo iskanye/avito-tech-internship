@@ -2,11 +2,11 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
+	"github.com/jackc/pgx/v5"
 )
 
 // Добавляет пользователя в БД
@@ -111,7 +111,7 @@ func (s *Storage) GetUser(
 	}
 	err = res.Scan(&user.TeamID, &user.IsActive)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, ErrNotFound
 		}
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
@@ -134,7 +134,7 @@ func (s *Storage) getUserID(
 	var id int64
 	err := res.Scan(&id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, ErrNotFound
 		}
 		return 0, err
