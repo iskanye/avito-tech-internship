@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users_id
 CREATE TABLE IF NOT EXISTS teams
 (
     id SERIAL PRIMARY KEY,
-    team_name NAME
+    team_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users
