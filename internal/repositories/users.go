@@ -26,7 +26,8 @@ func (s *Storage) AddUser(
 	insertID := s.pool.QueryRow(
 		ctx,
 		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
-		user.UserID)
+		user.UserID,
+	)
 
 	var id int64
 	err = insertID.Scan(&id)
@@ -62,6 +63,9 @@ func (s *Storage) SetActive(
 	// Получаем числовой id
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -97,6 +101,9 @@ func (s *Storage) GetUser(
 
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.User{}, ErrNotFound
+		}
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -111,9 +118,6 @@ func (s *Storage) GetUser(
 	}
 	err = res.Scan(&user.TeamID, &user.IsActive)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, ErrNotFound
-		}
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -134,9 +138,6 @@ func (s *Storage) getUserID(
 	var id int64
 	err := res.Scan(&id)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, ErrNotFound
-		}
 		return 0, err
 	}
 
