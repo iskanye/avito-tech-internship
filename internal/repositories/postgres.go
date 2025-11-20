@@ -1,14 +1,15 @@
 package repositories
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Storage struct {
-	db *sql.DB
+	pool *pgxpool.Pool
 }
 
 func New(
@@ -21,19 +22,27 @@ func New(
 	const op = "repositories.postgres.New"
 
 	connStr := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbName,
+		"postges://%s:%s@%s:%d/%s",
+		user, password, host, port, dbName,
 	)
-	db, err := sql.Open("pgx", connStr)
+
+	config, err := pgxpool.ParseConfig(connStr)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	config.MaxConns = 10
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &Storage{
-		db: db,
+		pool: pool,
 	}, nil
 }
 
-func (s *Storage) Stop() error {
-	return s.db.Close()
+func (s *Storage) Stop() {
+	s.pool.Close()
 }

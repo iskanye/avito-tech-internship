@@ -16,38 +16,35 @@ func (s *Storage) AddUser(
 ) error {
 	const op = "repositories.postgres.AddUser"
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
 	// Вставить ID в базу
-	insertID, err := s.db.Prepare("INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;")
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	res := insertID.QueryRowContext(ctx, user.UserID)
+	insertID := s.pool.QueryRow(
+		ctx,
+		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
+		user.UserID)
 
 	var id int64
-	err = res.Scan(&id)
+	err = insertID.Scan(&id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
 	// Вставить самого юзера
-	insertUser, err := s.db.Prepare("INSERT INTO users (user_id, team_id, is_active) VALUES ($1, $2, $3);")
+	_, err = s.pool.Exec(
+		ctx,
+		"INSERT INTO users (user_id, team_id, is_active) VALUES ($1, $2, $3);",
+		id, user.TeamID, user.IsActive,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = insertUser.ExecContext(ctx, id, user.TeamID, user.IsActive)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -62,30 +59,29 @@ func (s *Storage) SetActive(
 ) error {
 	const op = "repositories.postgres.SetActive"
 
+	// Получаем числовой id
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	defer tx.Rollback()
+	defer tx.Rollback(ctx)
 
-	stmt, err := s.db.Prepare(
+	// Обновляем is_active у пользователя
+	_, err = s.pool.Exec(
+		ctx,
 		`UPDATE users SET is_active = $1 WHERE user_id = $2`,
+		isActive, id,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = stmt.ExecContext(ctx, isActive, id)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -104,12 +100,11 @@ func (s *Storage) GetUser(
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	stmt, err := s.db.Prepare("SELECT team_id, is_active FROM users WHERE user_id = $1")
-	if err != nil {
-		return models.User{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	res := stmt.QueryRowContext(ctx, id)
+	res := s.pool.QueryRow(
+		ctx,
+		"SELECT team_id, is_active FROM users WHERE user_id = $1",
+		id,
+	)
 
 	user := models.User{
 		UserID: userID,
@@ -130,15 +125,14 @@ func (s *Storage) getUserID(
 	ctx context.Context,
 	userID string,
 ) (int64, error) {
-	stmt, err := s.db.Prepare("SELECT id FROM users_id u WHERE u.user_id = $1")
-	if err != nil {
-		return 0, err
-	}
-
-	res := stmt.QueryRowContext(ctx, userID)
+	res := s.pool.QueryRow(
+		ctx,
+		"SELECT id FROM users_id u WHERE u.user_id = $1",
+		userID,
+	)
 
 	var id int64
-	err = res.Scan(&id)
+	err := res.Scan(&id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, ErrNotFound

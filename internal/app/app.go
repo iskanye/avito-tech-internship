@@ -45,13 +45,8 @@ func (a *App) MustRun() {
 }
 
 func (a *App) GracefulStop() {
-	if err := a.s.Stop(); err != nil {
-		a.log.Error("Error while stopping",
-			slog.String("err", err.Error()),
-		)
-	} else {
-		a.log.Info("Gracefully stopped")
-	}
+	a.s.Stop()
+	a.log.Info("Gracefully stopped")
 }
 
 func address(host string, port int) string {
