@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log/slog"
 	"net"
 	"strconv"
 
@@ -14,11 +15,14 @@ import (
 type App struct {
 	e   *gin.Engine
 	s   *repositories.Storage
+	log *slog.Logger
 	cfg *config.Config
 }
 
 func New(
 	engine *gin.Engine,
+	log *slog.Logger,
+	cfg *config.Config,
 ) *App {
 	server := server.NewServer()
 
@@ -28,7 +32,9 @@ func New(
 	))
 
 	return &App{
-		e: engine,
+		e:   engine,
+		log: log,
+		cfg: cfg,
 	}
 }
 
@@ -39,7 +45,13 @@ func (a *App) MustRun() {
 }
 
 func (a *App) GracefulStop() {
-	a.s.Stop()
+	if err := a.s.Stop(); err != nil {
+		a.log.Error("Error while stopping",
+			slog.String("err", err.Error()),
+		)
+	} else {
+		a.log.Info("Gracefully stopped")
+	}
 }
 
 func address(host string, port int) string {
