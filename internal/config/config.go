@@ -19,6 +19,7 @@ type PostgresConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	DBName   string `yaml:"db_name"`
+	MaxConns int32  `yaml:"max_conns"`
 }
 
 func MustLoad() *Config {

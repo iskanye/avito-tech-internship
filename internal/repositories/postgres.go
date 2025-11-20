@@ -18,6 +18,7 @@ func New(
 	user string,
 	password string,
 	dbName string,
+	maxConns int32,
 ) (*Storage, error) {
 	const op = "repositories.postgres.New"
 
@@ -31,7 +32,7 @@ func New(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	config.MaxConns = 10
+	config.MaxConns = maxConns
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
