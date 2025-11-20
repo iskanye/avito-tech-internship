@@ -60,20 +60,27 @@ func (s *Storage) SetActive(
 ) error {
 	const op = "repositories.postgres.SetActive"
 
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	defer tx.Rollback(ctx)
+
 	// Получаем числовой id
-	id, err := s.getUserID(ctx, userID)
+	res := s.pool.QueryRow(
+		ctx,
+		"SELECT id FROM users_id u WHERE u.user_id = $1",
+		userID,
+	)
+
+	var id int64
+	err = res.Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
-
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback(ctx)
 
 	// Обновляем is_active у пользователя
 	_, err = s.pool.Exec(
@@ -90,56 +97,4 @@ func (s *Storage) SetActive(
 	}
 
 	return nil
-}
-
-// Возвращает пользователя
-func (s *Storage) GetUser(
-	ctx context.Context,
-	userID string,
-) (models.User, error) {
-	const op = "repositories.postgres.GetUser"
-
-	id, err := s.getUserID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, ErrNotFound
-		}
-		return models.User{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	res := s.pool.QueryRow(
-		ctx,
-		"SELECT team_id, is_active FROM users WHERE user_id = $1",
-		id,
-	)
-
-	user := models.User{
-		UserID: userID,
-	}
-	err = res.Scan(&user.TeamID, &user.IsActive)
-	if err != nil {
-		return models.User{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return user, nil
-}
-
-// Возвращает ID (int64) пользователя по его ID (string)
-func (s *Storage) getUserID(
-	ctx context.Context,
-	userID string,
-) (int64, error) {
-	res := s.pool.QueryRow(
-		ctx,
-		"SELECT id FROM users_id u WHERE u.user_id = $1",
-		userID,
-	)
-
-	var id int64
-	err := res.Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
 }
