@@ -38,8 +38,8 @@ func (s *Storage) AddUser(
 	// Вставить самого юзера
 	_, err = s.pool.Exec(
 		ctx,
-		"INSERT INTO users (user_id, team_id, is_active) VALUES ($1, $2, $3);",
-		id, user.TeamID, user.IsActive,
+		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
+		id, user.TeamID, user.Username, user.IsActive,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -50,6 +50,39 @@ func (s *Storage) AddUser(
 	}
 
 	return nil
+}
+
+// Возвращает пользователя по его ID
+func (s *Storage) GetUser(
+	ctx context.Context,
+	userID string,
+) (models.User, error) {
+	const op = "repositories.postgres.GetUser"
+
+	id, err := s.getUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.User{}, ErrNotFound
+		}
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем данные о пользователе из БД
+	res := s.pool.QueryRow(
+		ctx,
+		"SELECT username, team_id, is_active FROM users WHERE user_id = $1",
+		id,
+	)
+
+	user := models.User{
+		UserID: userID,
+	}
+	err = res.Scan(&user.Username, &user.TeamID, &user.IsActive)
+	if err != nil {
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return user, nil
 }
 
 // Меняет is_active у пользователя
@@ -67,14 +100,7 @@ func (s *Storage) SetActive(
 	defer tx.Rollback(ctx)
 
 	// Получаем числовой id
-	res := s.pool.QueryRow(
-		ctx,
-		"SELECT id FROM users_id u WHERE u.user_id = $1",
-		userID,
-	)
-
-	var id int64
-	err = res.Scan(&id)
+	id, err := s.getUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
@@ -97,4 +123,24 @@ func (s *Storage) SetActive(
 	}
 
 	return nil
+}
+
+// Возвращает ID (int64) пользователя по его ID (string)
+func (s *Storage) getUserID(
+	ctx context.Context,
+	userID string,
+) (int64, error) {
+	res := s.pool.QueryRow(
+		ctx,
+		"SELECT id FROM users_id u WHERE u.user_id = $1",
+		userID,
+	)
+
+	var id int64
+	err := res.Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
