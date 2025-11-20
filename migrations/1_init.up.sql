@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users
 (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users_id (id),
+    username TEXT NOT NULL,
     team_id INTEGER REFERENCES teams (id),
     is_active BOOLEAN NOT NULL
 );
