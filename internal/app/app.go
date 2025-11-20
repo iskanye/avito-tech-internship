@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/iskanye/avito-tech-internship/internal/api"
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
 	"github.com/iskanye/avito-tech-internship/internal/server"
+	"github.com/iskanye/avito-tech-internship/pkg/api"
 )
 
 type App struct {

@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	"github.com/iskanye/avito-tech-internship/internal/api"
+	"github.com/iskanye/avito-tech-internship/pkg/api"
 )
 
 // (GET /users/getReview)

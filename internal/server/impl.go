@@ -1,6 +1,6 @@
 package server
 
-import "github.com/iskanye/avito-tech-internship/internal/api"
+import "github.com/iskanye/avito-tech-internship/pkg/api"
 
 type Server struct{}
 
