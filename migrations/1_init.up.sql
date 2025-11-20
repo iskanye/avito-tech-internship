@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users_id
 (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    user_id TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users
