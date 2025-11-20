@@ -2,11 +2,14 @@ package prassignment
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 )
 
 type PRAssignment struct {
+	log *slog.Logger
+
 	// Объекты для взаимодействия с пользователями
 	userCreator  UserCreator
 	userModifier UserModifier
@@ -34,6 +37,10 @@ type UserProvider interface {
 }
 
 type UserModifier interface {
+	UpdateUser(
+		ctx context.Context,
+		user models.User,
+	) error
 	SetActive(
 		ctx context.Context,
 		userID string,
@@ -55,4 +62,20 @@ type TeamProvider interface {
 	) (models.Team, error)
 }
 
-func New()
+func New(
+	log *slog.Logger,
+	userCreator UserCreator,
+	userModifier UserModifier,
+	userProvider UserProvider,
+	teamCreator TeamCreator,
+	teamProvider TeamProvider,
+) *PRAssignment {
+	return &PRAssignment{
+		log:          log,
+		userCreator:  userCreator,
+		userModifier: userModifier,
+		userProvider: userProvider,
+		teamCreator:  teamCreator,
+		teamProvider: teamProvider,
+	}
+}
