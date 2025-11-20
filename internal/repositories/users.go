@@ -7,6 +7,7 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Добавляет пользователя в БД
@@ -32,6 +33,10 @@ func (s Storage) AddUser(
 	var id int64
 	err = insertID.Scan(&id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
+			return ErrUserExists
+		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -46,6 +51,40 @@ func (s Storage) AddUser(
 	}
 
 	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+// Обновить данные пользователя в БД
+func (s Storage) UpdateUser(
+	ctx context.Context,
+	user models.User,
+) error {
+	const op = "repositories.postgres.AddUser"
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Получаем ID пользователя
+	id, err := s.getUserID(ctx, user.UserID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = s.pool.Exec(
+		ctx,
+		"UPDATE users SET username = $1, team_id = $2, is_active = $3 WHERE user_id = $4",
+		user.Username, user.TeamID, user.IsActive, id,
+	)
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
