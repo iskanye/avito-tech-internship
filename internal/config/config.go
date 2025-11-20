@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Host     string         `yaml:"host" env-default:"localhost"`
 	Port     int            `yaml:"port"`
 	Postgres PostgresConfig `yaml:"postgres"`
 }
