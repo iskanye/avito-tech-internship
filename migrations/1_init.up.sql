@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS users_id
 (
     id SERIAL PRIMARY KEY,
-    user_id TEXT NOT NULL
+    user_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS teams
 (
     id SERIAL PRIMARY KEY,
-    team_name TEXT NOT NULL
+    team_name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS users
