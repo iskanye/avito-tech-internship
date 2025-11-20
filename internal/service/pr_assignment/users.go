@@ -10,6 +10,7 @@ import (
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
 )
 
+// Назначает пользователю свойство is_active
 func (a *PRAssignment) SetIsActive(
 	ctx context.Context,
 	userID string,
