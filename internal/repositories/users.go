@@ -10,7 +10,7 @@ import (
 )
 
 // Добавляет пользователя в БД
-func (s *Storage) AddUser(
+func (s Storage) AddUser(
 	ctx context.Context,
 	user models.User,
 ) error {
@@ -53,7 +53,7 @@ func (s *Storage) AddUser(
 }
 
 // Возвращает пользователя по его ID
-func (s *Storage) GetUser(
+func (s Storage) GetUser(
 	ctx context.Context,
 	userID string,
 ) (models.User, error) {
@@ -86,7 +86,7 @@ func (s *Storage) GetUser(
 }
 
 // Меняет is_active у пользователя
-func (s *Storage) SetActive(
+func (s Storage) SetActive(
 	ctx context.Context,
 	userID string,
 	isActive bool,

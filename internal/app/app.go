@@ -23,7 +23,7 @@ func New(
 	engine *gin.Engine,
 	log *slog.Logger,
 	cfg *config.Config,
-) *App {
+) App {
 	server := server.NewServer()
 
 	api.RegisterHandlers(engine, api.NewStrictHandler(
@@ -31,20 +31,20 @@ func New(
 		[]api.StrictMiddlewareFunc{},
 	))
 
-	return &App{
+	return App{
 		e:   engine,
 		log: log,
 		cfg: cfg,
 	}
 }
 
-func (a *App) MustRun() {
+func (a App) MustRun() {
 	if err := a.e.Run(address(a.cfg.Host, a.cfg.Port)); err != nil {
 		panic(err)
 	}
 }
 
-func (a *App) GracefulStop() {
+func (a App) GracefulStop() {
 	a.s.Stop()
 	a.log.Info("Gracefully stopped")
 }

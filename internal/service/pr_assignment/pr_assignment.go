@@ -54,3 +54,5 @@ type TeamProvider interface {
 		teamName string,
 	) (models.Team, error)
 }
+
+func New()
