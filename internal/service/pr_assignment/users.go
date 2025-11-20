@@ -27,18 +27,28 @@ func (a *PRAssignment) SetIsActive(
 	// Обновляем is_active пользователя
 	err := a.userModifier.SetActive(ctx, userID, isActive)
 	if err != nil {
+		log.Error("Failed to set is_active",
+			slog.String("err", err.Error()),
+		)
 		if errors.Is(err, repositories.ErrNotFound) {
 			return models.User{}, ErrNotFound
 		}
+
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	// Получаем пользователя, чтобы вернуть
 	user, err := a.userProvider.GetUser(ctx, userID)
 	// Если на прошлом этапе уже не вылетела ошибка ErrNotFound
 	// то тут уже нет смысла её вылавливать
 	if err != nil {
+		log.Error("Failed to get user",
+			slog.String("err", err.Error()),
+		)
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
+
+	log.Info("Set is_active successfully")
 
 	return user, nil
 }
