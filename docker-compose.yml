@@ -1,10 +1,8 @@
 services:
   db:
     image: postgres:latest
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+    env_file:
+      - ./.env
     ports:
       - "5432:5432"
     container_name: postgres
@@ -13,24 +11,19 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
-    networks:    
-      - backend
     volumes:
-      - pr:/var/lib/postgresql/
+      - pr-assignment:/var/lib/postgresql/
 
-  pr:
+  pr-assignment:
     build: ./
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      CONFIG_PATH: ./config/dev.yaml
+    env_file:
+      - ./.env
     depends_on:
       db:
         condition: service_healthy
     ports:
       - 8080:8080
-    container_name: pr
+    container_name: pr-assignment
 
 volumes:
-  pr:
+  pr-assignment:
