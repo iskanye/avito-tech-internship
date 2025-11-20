@@ -9,7 +9,7 @@ import (
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
 	"github.com/iskanye/avito-tech-internship/internal/server"
-	"github.com/iskanye/avito-tech-internship/pkg/api"
+	prassignment "github.com/iskanye/avito-tech-internship/internal/service/pr_assignment"
 )
 
 type App struct {
@@ -24,12 +24,24 @@ func New(
 	log *slog.Logger,
 	cfg *config.Config,
 ) App {
-	server := server.NewServer()
+	storage, err := repositories.New(
+		cfg.Postgres.Host,
+		cfg.Postgres.Port,
+		cfg.Postgres.User,
+		cfg.Postgres.Password,
+		cfg.Postgres.DBName,
+		cfg.Postgres.MaxConns,
+	)
+	if err != nil {
+		panic(err)
+	}
 
-	api.RegisterHandlers(engine, api.NewStrictHandler(
-		server,
-		[]api.StrictMiddlewareFunc{},
-	))
+	prAssignment := prassignment.New(
+		log,
+		storage, storage, storage,
+		storage, storage,
+	)
+	server.Register(engine, prAssignment)
 
 	return App{
 		e:   engine,

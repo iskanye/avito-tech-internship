@@ -7,7 +7,7 @@ import (
 )
 
 // (POST /team/add)
-func (Server) PostTeamAdd(
+func (serverAPI) PostTeamAdd(
 	c context.Context,
 	req api.PostTeamAddRequestObject,
 ) (api.PostTeamAddResponseObject, error) {
@@ -15,7 +15,7 @@ func (Server) PostTeamAdd(
 }
 
 // (GET /team/get)
-func (Server) GetTeamGet(
+func (serverAPI) GetTeamGet(
 	c context.Context,
 	req api.GetTeamGetRequestObject,
 ) (api.GetTeamGetResponseObject, error) {

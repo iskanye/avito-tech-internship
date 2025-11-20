@@ -7,7 +7,7 @@ import (
 )
 
 // (POST /pullRequest/create)
-func (Server) PostPullRequestCreate(
+func (serverAPI) PostPullRequestCreate(
 	c context.Context,
 	req api.PostPullRequestCreateRequestObject,
 ) (api.PostPullRequestCreateResponseObject, error) {
@@ -15,7 +15,7 @@ func (Server) PostPullRequestCreate(
 }
 
 // (POST /pullRequest/merge)
-func (Server) PostPullRequestMerge(
+func (serverAPI) PostPullRequestMerge(
 	c context.Context,
 	req api.PostPullRequestMergeRequestObject,
 ) (api.PostPullRequestMergeResponseObject, error) {
@@ -23,7 +23,7 @@ func (Server) PostPullRequestMerge(
 }
 
 // (POST /pullRequest/reassign)
-func (Server) PostPullRequestReassign(
+func (serverAPI) PostPullRequestReassign(
 	c context.Context,
 	req api.PostPullRequestReassignRequestObject,
 ) (api.PostPullRequestReassignResponseObject, error) {

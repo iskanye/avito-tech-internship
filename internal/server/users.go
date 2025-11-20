@@ -7,7 +7,7 @@ import (
 )
 
 // (GET /users/getReview)
-func (Server) GetUsersGetReview(
+func (serverAPI) GetUsersGetReview(
 	c context.Context,
 	req api.GetUsersGetReviewRequestObject,
 ) (api.GetUsersGetReviewResponseObject, error) {
@@ -15,7 +15,7 @@ func (Server) GetUsersGetReview(
 }
 
 // (POST /users/setIsActive)
-func (Server) PostUsersSetIsActive(
+func (serverAPI) PostUsersSetIsActive(
 	c context.Context,
 	req api.PostUsersSetIsActiveRequestObject,
 ) (api.PostUsersSetIsActiveResponseObject, error) {
