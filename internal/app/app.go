@@ -9,7 +9,7 @@ import (
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
 	"github.com/iskanye/avito-tech-internship/internal/server"
-	prassignment "github.com/iskanye/avito-tech-internship/internal/service/pr_assignment"
+	"github.com/iskanye/avito-tech-internship/internal/service/prassignment"
 )
 
 type App struct {

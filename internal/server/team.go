@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
-	prassignment "github.com/iskanye/avito-tech-internship/internal/service/pr_assignment"
+	"github.com/iskanye/avito-tech-internship/internal/service/prassignment"
 	"github.com/iskanye/avito-tech-internship/pkg/api"
 )
 
