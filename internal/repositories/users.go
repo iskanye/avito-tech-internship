@@ -17,12 +17,6 @@ func (s Storage) AddUser(
 ) error {
 	const op = "repositories.postgres.AddUser"
 
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback(ctx)
-
 	// Вставить ID в базу
 	insertID := s.pool.QueryRow(
 		ctx,
@@ -31,7 +25,7 @@ func (s Storage) AddUser(
 	)
 
 	var id int64
-	err = insertID.Scan(&id)
+	err := insertID.Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
@@ -50,10 +44,6 @@ func (s Storage) AddUser(
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
 	return nil
 }
 
@@ -63,12 +53,6 @@ func (s Storage) UpdateUser(
 	user models.User,
 ) error {
 	const op = "repositories.postgres.AddUser"
-
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback(ctx)
 
 	// Получаем ID пользователя
 	id, err := s.getUserID(ctx, user.UserID)
@@ -132,12 +116,6 @@ func (s Storage) SetActive(
 ) error {
 	const op = "repositories.postgres.SetActive"
 
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback(ctx)
-
 	// Получаем числовой id
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
@@ -154,10 +132,6 @@ func (s Storage) SetActive(
 		isActive, id,
 	)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

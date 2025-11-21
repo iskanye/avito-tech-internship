@@ -21,12 +21,6 @@ func (s Storage) AddTeam(
 ) (int64, error) {
 	const op = "repositories.postgres.AddTeam"
 
-	tx, err := s.pool.Begin(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-	defer tx.Rollback(ctx)
-
 	// Вставить команду в базу
 	insertID := s.pool.QueryRow(
 		ctx,
@@ -35,16 +29,12 @@ func (s Storage) AddTeam(
 	)
 
 	var id int64
-	err = insertID.Scan(&id)
+	err := insertID.Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
 			return 0, ErrTeamExists
 		}
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err = tx.Commit(ctx); err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
