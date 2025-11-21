@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS pull_requests
 
 CREATE TABLE IF NOT EXISTS pull_requests_id
 (
-    id INTEGER REFERENCES pull_requests_id (id),
+    id INTEGER REFERENCES pull_requests (id),
     pull_request_id TEXT NOT NULL UNIQUE
 );
 
