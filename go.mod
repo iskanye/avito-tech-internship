@@ -3,6 +3,7 @@ module github.com/iskanye/avito-tech-internship
 go 1.25.3
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-migrate/migrate/v4 v4.19.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0

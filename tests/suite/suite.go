@@ -14,7 +14,7 @@ import (
 )
 
 type Suite struct {
-	c *api.ClientWithResponses
+	Client *api.ClientWithResponses
 }
 
 func New(t *testing.T) (*Suite, context.Context) {
@@ -36,7 +36,7 @@ func New(t *testing.T) (*Suite, context.Context) {
 	require.NoError(t, err)
 
 	return &Suite{
-		c: c,
+		Client: c,
 	}, context.TODO()
 }
 
