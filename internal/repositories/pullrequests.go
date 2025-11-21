@@ -182,3 +182,29 @@ func (s *Storage) GetReview(
 
 	return pullRequests, nil
 }
+
+// Помечает PR как MERGED
+func (s *Storage) MergePullRequest(
+	ctx context.Context,
+	pullRequestID string,
+) error {
+	const op = "repositories.postgres.MergePullRequest"
+
+	// Обновляем стату пул реквеста
+	_, err := s.pool.Exec(
+		ctx,
+		`
+		UPDATE pull_requests SET status = $1 WHERE id = 
+		(SELECT id FROM pull_requests_id WHERE pull_request_id = $2);
+		`,
+		models.PULLREQUEST_MERGED, pullRequestID,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
