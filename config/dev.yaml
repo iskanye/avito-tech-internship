@@ -1,3 +1,4 @@
+host: "pr-assignment"
 port: 8080
 postgres:
   host: "postgres"
