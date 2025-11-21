@@ -4,14 +4,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o /bin/pr-assignment ./cmd/pr-assignment/main.go
+RUN go build -o /bin/prassignment ./cmd/prassignment/main.go
 RUN go build -o /bin/migrator ./cmd/migrator/main.go
 
 # Запуск
 FROM alpine
 USER root
 WORKDIR /home/app
-COPY --from=builder /bin/pr-assignment ./
+COPY --from=builder /bin/prassignment ./
 COPY --from=builder /bin/migrator ./
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/migrations ./migrations
