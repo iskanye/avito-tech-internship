@@ -11,7 +11,7 @@ import (
 )
 
 // Добавляет PR в базу данных
-func (s Storage) CreatePullRequest(
+func (s *Storage) CreatePullRequest(
 	ctx context.Context,
 	pullRequest models.PullRequest,
 ) error {

@@ -15,7 +15,7 @@ import (
 const UNIQUE_VIOLATION_CODE = "23505"
 
 // Вносит имя команды в БД и возвращает её ID
-func (s Storage) AddTeam(
+func (s *Storage) AddTeam(
 	ctx context.Context,
 	teamName string,
 ) (int64, error) {
@@ -42,7 +42,7 @@ func (s Storage) AddTeam(
 }
 
 // Получает команду по ее названию
-func (s Storage) GetTeam(
+func (s *Storage) GetTeam(
 	ctx context.Context,
 	teamName string,
 ) (models.Team, error) {
