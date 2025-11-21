@@ -78,9 +78,9 @@ func (s Storage) GetTeam(
 	getTeamMemdbers, err := s.pool.Query(
 		ctx,
 		`
-		SELECT id.user_id, u.username, u.is_active
+		SELECT i.user_id, u.username, u.is_active
 		FROM users u
-		JOIN users_id id ON id.id = user.user_id
+		JOIN users_id i ON i.id = u.user_id
 		WHERE team_id = $1;
 		`,
 		teamID,

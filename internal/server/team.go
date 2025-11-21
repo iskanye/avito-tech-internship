@@ -32,7 +32,7 @@ func (s *serverAPI) PostTeamAdd(
 		response := api.PostTeamAdd400JSONResponse{}
 		response.Error.Code = api.TEAMEXISTS
 		response.Error.Message = err.Error()
-		return response, err
+		return response, nil
 	}
 
 	teamResp := convertTeamToApi(&team)
@@ -52,7 +52,7 @@ func (s *serverAPI) GetTeamGet(
 		response := api.GetTeamGet404JSONResponse{}
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
-		return response, err
+		return response, nil
 	}
 
 	teamResp := convertTeamToApi(&team)

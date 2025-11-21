@@ -87,7 +87,7 @@ func (a *PRAssignment) GetTeam(
 	ctx context.Context,
 	teamName string,
 ) (models.Team, error) {
-	const op = "service.PRAssignment.AddTeam"
+	const op = "service.PRAssignment.GetTeam"
 
 	log := a.log.With(
 		slog.String("op", op),
