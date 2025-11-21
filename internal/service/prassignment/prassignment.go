@@ -96,7 +96,7 @@ type ReviewersModifier interface {
 		ctx context.Context,
 		pullRequestID string,
 		oldReviewerID string,
-	)
+	) (string, error)
 }
 
 func New(
