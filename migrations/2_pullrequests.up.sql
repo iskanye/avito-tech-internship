@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS pull_requests
 CREATE TABLE IF NOT EXISTS pull_requests_id
 (
     id INTEGER REFERENCES pull_requests_id (id),
-    pull_request_id TEXT NOT NULL
+    pull_request_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS reviewers
