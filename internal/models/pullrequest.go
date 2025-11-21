@@ -15,6 +15,6 @@ type PullRequest struct {
 	AuthorID          string
 	Status            PRStatus
 	AssignedReviewers []string
-	CreatedAt         *time.Time
-	MergedAt          *time.Time
+	CreatedAt         time.Time
+	MergedAt          time.Time
 }

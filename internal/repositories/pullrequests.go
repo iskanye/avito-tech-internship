@@ -51,7 +51,7 @@ func (s *Storage) CreatePullRequest(
 		pull_request_id, pull_request_name, author_id, status, created_at
 		) VALUES ($1, $2, $3, $4, $5) RETURNING id;
 		`,
-		dbID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt,
+		dbID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
 	)
 
 	// Получаем ID пулреквеста в базе данных
@@ -62,4 +62,72 @@ func (s *Storage) CreatePullRequest(
 	}
 
 	return nil
+}
+
+// Получает PR из базы данных
+func (s *Storage) GetPullRequest(
+	ctx context.Context,
+	pullRequestID string,
+) (models.PullRequest, error) {
+	const op = "repositories.postgres.GetPullRequest"
+
+	// Получаем ID пул реквеста
+	getID := s.pool.QueryRow(
+		ctx,
+		"SELECT id FROM pull_requests_id WHERE pull_request_id = $1;",
+		pullRequestID,
+	)
+
+	var prID int64
+	err := getID.Scan(&prID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.PullRequest{}, ErrNotFound
+		}
+		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем пул реквест
+	getPR := s.pool.QueryRow(
+		ctx,
+		`
+		SELECT pull_request_name, author_id, status, created_at, merged_at
+		FROM pull_requests WHERE pull_request_id = $1; 
+		`,
+		prID,
+	)
+
+	var pullRequest models.PullRequest
+	var author string
+	err = getPR.Scan(
+		&pullRequest.Name,
+		&author,
+		&pullRequest.Status,
+		&pullRequest.CreatedAt,
+		&pullRequest.MergedAt,
+	)
+	if err != nil {
+		// Нет смысла проверять на ErrNoRows
+		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем ID автора
+	getAuthorID := s.pool.QueryRow(
+		ctx,
+		`
+		SELECT i.user_id 
+		FROM users u
+		JOIN users_id i ON i.id = u.user_id
+		WHERE u.id = $1;
+		`,
+		author,
+	)
+
+	err = getAuthorID.Scan(&pullRequest.AuthorID)
+	if err != nil {
+		// Нет смысла проверять на ErrNoRows
+		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return pullRequest, nil
 }

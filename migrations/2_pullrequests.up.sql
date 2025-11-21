@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS pull_requests
     author_id INTEGER REFERENCES users (id),
     status TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL,
-    merged_at TIMESTAMP
+    merged_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS reviewers
