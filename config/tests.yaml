@@ -1,0 +1,4 @@
+port: 8080
+postgres:
+  port: 5432
+  max_conns: 10
