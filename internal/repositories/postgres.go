@@ -23,16 +23,14 @@ func New(
 	const op = "repositories.postgres.New"
 
 	connStr := fmt.Sprintf(
-		"postges://%s:%s@%s:%d/%s",
-		user, password, host, port, dbName,
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable&pool_max_conns=%d",
+		user, password, host, port, dbName, maxConns,
 	)
 
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
 		return Storage{}, fmt.Errorf("%s: %w", op, err)
 	}
-
-	config.MaxConns = maxConns
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
