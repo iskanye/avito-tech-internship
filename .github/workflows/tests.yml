@@ -12,6 +12,7 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+      CONFIG_PATH: ./config/tests.yaml
 
     services:
       db:
@@ -35,8 +36,6 @@ jobs:
         run: go mod download
 
       - name: Apply migrations
-        env:  
-          CONFIG_PATH: ./config/tests.yaml
         run: go run ./cmd/migrator --migrations-path=./migrations
 
       - name: Run service
