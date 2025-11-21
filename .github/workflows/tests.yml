@@ -39,7 +39,7 @@ jobs:
         run: go run ./cmd/migrator --migrations-path=./migrations
 
       - name: Run service
-        run: nohup go run ./cmd/prassignment
+        run: nohup go run ./cmd/prassignment &
         
       - name: Check listening ports with ss
         run: ss -tuln
