@@ -126,6 +126,31 @@ func (s *Storage) GetPullRequest(
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	// Получаем ревьюверов
+	getReviewers, err := s.pool.Query(
+		ctx,
+		`
+		SELECT i.user_id FROM reviewers r
+		JOIN users_id i ON r.user_id = i.id
+		WHERE pull_request_id = $1;
+		`,
+		prID,
+	)
+	// Если ревьюверы не нашлись, то значит их и нет
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	for getReviewers.Next() {
+		var reviewer string
+		err := getReviewers.Scan(&getReviewers)
+		if err != nil {
+			return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		pullRequest.AssignedReviewers = append(pullRequest.AssignedReviewers, reviewer)
+	}
+
 	return pullRequest, nil
 }
 
@@ -190,7 +215,7 @@ func (s *Storage) MergePullRequest(
 ) error {
 	const op = "repositories.postgres.MergePullRequest"
 
-	// Обновляем стату пул реквеста
+	// Обновляем статус пул реквеста
 	_, err := s.pool.Exec(
 		ctx,
 		`
