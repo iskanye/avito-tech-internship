@@ -29,15 +29,10 @@ func (s *serverAPI) PostTeamAdd(
 
 	team, err := s.assign.AddTeam(c, teamReq)
 	if errors.Is(err, prassignment.ErrTeamExists) {
-		return api.PostTeamAdd400JSONResponse{
-			Error: struct {
-				Code    api.ErrorResponseErrorCode "json:\"code\""
-				Message string                     "json:\"message\""
-			}{
-				Code:    api.TEAMEXISTS,
-				Message: err.Error(),
-			},
-		}, err
+		response := api.PostTeamAdd400JSONResponse{}
+		response.Error.Code = api.TEAMEXISTS
+		response.Error.Message = err.Error()
+		return response, err
 	}
 
 	teamResp := convertTeamToApi(&team)
@@ -48,11 +43,21 @@ func (s *serverAPI) PostTeamAdd(
 }
 
 // (GET /team/get)
-func (serverAPI) GetTeamGet(
+func (s *serverAPI) GetTeamGet(
 	c context.Context,
 	req api.GetTeamGetRequestObject,
 ) (api.GetTeamGetResponseObject, error) {
-	return nil, nil
+	team, err := s.assign.GetTeam(c, req.Params.TeamName)
+	if errors.Is(err, prassignment.ErrNotFound) {
+		response := api.GetTeamGet404JSONResponse{}
+		response.Error.Code = api.NOTFOUND
+		response.Error.Message = err.Error()
+		return response, err
+	}
+
+	teamResp := convertTeamToApi(&team)
+	response := (api.GetTeamGet200JSONResponse)(*teamResp)
+	return response, nil
 }
 
 func convertTeamToApi(team *models.Team) *api.Team {
