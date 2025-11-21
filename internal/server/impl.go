@@ -47,7 +47,7 @@ type PRAssignment interface {
 		ctx context.Context,
 		pullRequestID string,
 		oldReviewerId string,
-	) (models.PullRequest, error)
+	) (models.PullRequest, string, error)
 }
 
 // Проверка на реализацию всех методов

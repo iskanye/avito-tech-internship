@@ -109,9 +109,8 @@ func (s *Storage) ReassignReviewer(
 	var prID, authorID int64
 	err := getID.Scan(&prID, &authorID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrNotFound
-		}
+		// Ловить ErrNoRows не имеет смысла
+		// За её отлов ответственна бизнес-логика
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 

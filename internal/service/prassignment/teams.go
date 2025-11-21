@@ -48,7 +48,7 @@ func (a *PRAssignment) AddTeam(
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Параллелезируем каждую вставку в БД
+	// Параллелизируем каждую вставку в БД
 	errGroup, errCtx := errgroup.WithContext(ctx)
 
 	for _, user := range team.Members {
@@ -67,6 +67,7 @@ func (a *PRAssignment) AddTeam(
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	// Сохраняем изменения
 	if err = a.txManager.Commit(ctx); err != nil {
 		log.Error("Failed to commit transaction",
 			slog.String("err", err.Error()),

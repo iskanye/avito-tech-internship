@@ -59,6 +59,7 @@ func (a *PRAssignment) SetIsActive(
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 
+	// Сохраняем изменения
 	if err = a.txManager.Commit(ctx); err != nil {
 		log.Error("Failed to commit transaction",
 			slog.String("err", err.Error()),
