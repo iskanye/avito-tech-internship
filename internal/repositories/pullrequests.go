@@ -7,6 +7,7 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Добавляет PR в базу данных
@@ -50,6 +51,10 @@ func (s *Storage) CreatePullRequest(
 		prID, pullRequest.ID,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
+			return ErrPRExists
+		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
