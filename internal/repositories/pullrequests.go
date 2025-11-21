@@ -7,7 +7,6 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Добавляет PR в базу данных
@@ -26,37 +25,30 @@ func (s *Storage) CreatePullRequest(
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Вставляем ID пул реквеста
-	insertID := s.pool.QueryRow(
-		ctx,
-		"INSERT INTO pull_requests_id (pull_request_id) VALUES ($1) RETURNING id;",
-		pullRequest.ID,
-	)
-
-	var dbID int64
-	err = insertID.Scan(&dbID)
-	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
-			return ErrPRExists
-		}
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	// Вставляем сам пул реквест
+	// Вставляем пул реквест
 	insertPR := s.pool.QueryRow(
 		ctx,
 		`
 		INSERT INTO pull_requests (
-		pull_request_id, pull_request_name, author_id, status, created_at
-		) VALUES ($1, $2, $3, $4, $5) RETURNING id;
+		pull_request_name, author_id, status, created_at, merged_at
+		) VALUES ($1, $2, $3, $4) RETURNING id;
 		`,
-		dbID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
+		pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
 	)
 
 	// Получаем ID пулреквеста в базе данных
 	var prID int64
 	err = insertPR.Scan(&prID)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Вставляем ID пул реквеста
+	_, err = s.pool.Exec(
+		ctx,
+		"INSERT INTO pull_requests_id (id, pull_request_id) VALUES ($1, $2)",
+		prID, pullRequest.ID,
+	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -92,7 +84,7 @@ func (s *Storage) GetPullRequest(
 		ctx,
 		`
 		SELECT pull_request_name, author_id, status, created_at, merged_at
-		FROM pull_requests WHERE pull_request_id = $1; 
+		FROM pull_requests WHERE id = $1; 
 		`,
 		prID,
 	)

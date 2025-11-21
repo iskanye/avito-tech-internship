@@ -87,6 +87,7 @@ type ReviewersAssigner interface {
 	AssignReviewers(
 		ctx context.Context,
 		pullRequestID string,
+		authorID string,
 	) error
 }
 

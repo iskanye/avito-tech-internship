@@ -70,7 +70,7 @@ func (s *Storage) GetTeam(
 		`
 		SELECT i.user_id, u.username, u.is_active
 		FROM users u
-		JOIN users_id i ON i.id = u.user_id
+		JOIN users_id i ON i.id = u.id
 		WHERE team_id = $1;
 		`,
 		teamID,
