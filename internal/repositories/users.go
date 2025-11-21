@@ -11,7 +11,7 @@ import (
 )
 
 // Добавляет пользователя в БД
-func (s *Storage) AddUser(
+func (s Storage) AddUser(
 	ctx context.Context,
 	user models.User,
 ) error {
@@ -44,7 +44,7 @@ func (s *Storage) AddUser(
 	_, err = s.pool.Exec(
 		ctx,
 		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
-		id, user.TeamID, user.Username, user.IsActive,
+		id, user.Username, user.TeamID, user.IsActive,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -58,7 +58,7 @@ func (s *Storage) AddUser(
 }
 
 // Обновить данные пользователя в БД
-func (s *Storage) UpdateUser(
+func (s Storage) UpdateUser(
 	ctx context.Context,
 	user models.User,
 ) error {
@@ -92,7 +92,7 @@ func (s *Storage) UpdateUser(
 }
 
 // Возвращает пользователя по его ID
-func (s *Storage) GetUser(
+func (s Storage) GetUser(
 	ctx context.Context,
 	userID string,
 ) (models.User, error) {
@@ -125,7 +125,7 @@ func (s *Storage) GetUser(
 }
 
 // Меняет is_active у пользователя
-func (s *Storage) SetActive(
+func (s Storage) SetActive(
 	ctx context.Context,
 	userID string,
 	isActive bool,
@@ -165,7 +165,7 @@ func (s *Storage) SetActive(
 }
 
 // Возвращает ID (int64) пользователя по его ID (string)
-func (s *Storage) getUserID(
+func (s Storage) getUserID(
 	ctx context.Context,
 	userID string,
 ) (int64, error) {

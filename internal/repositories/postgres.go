@@ -19,7 +19,7 @@ func New(
 	password string,
 	dbName string,
 	maxConns int32,
-) (*Storage, error) {
+) (Storage, error) {
 	const op = "repositories.postgres.New"
 
 	connStr := fmt.Sprintf(
@@ -29,19 +29,19 @@ func New(
 
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return Storage{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	pool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return Storage{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &Storage{
+	return Storage{
 		pool: pool,
 	}, nil
 }
 
-func (s *Storage) Stop() {
+func (s Storage) Stop() {
 	s.pool.Close()
 }
