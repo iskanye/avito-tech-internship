@@ -22,12 +22,32 @@ type PRAssignment interface {
 		ctx context.Context,
 		teamName string,
 	) (models.Team, error)
+
 	// Методы пользователя
 	SetIsActive(
 		ctx context.Context,
 		userID string,
 		isActive bool,
 	) (models.User, error)
+	GetReview(
+		ctx context.Context,
+		userID string,
+	) ([]models.PullRequest, error)
+
+	// Методы пул реквестов
+	CreatePullRequest(
+		ctx context.Context,
+		pullRequest models.PullRequest,
+	) (models.PullRequest, error)
+	MergePullRequest(
+		ctx context.Context,
+		pullRequestID string,
+	) (models.PullRequest, error)
+	ReassignPullRequest(
+		ctx context.Context,
+		pullRequestID string,
+		oldReviewerId string,
+	) (models.PullRequest, error)
 }
 
 // Проверка на реализацию всех методов

@@ -70,3 +70,32 @@ func (a *PRAssignment) SetIsActive(
 
 	return user, nil
 }
+
+// Получает пул реквесты, в которых пользователь - ревьювер
+func (a *PRAssignment) GetReview(
+	ctx context.Context,
+	userID string,
+) ([]models.PullRequest, error) {
+	const op = "service.PRAssignment.GetReview"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("user_id", userID),
+	)
+
+	log.Info("Attempting to get reviewing PRs")
+
+	pullRequests, err := a.prProvider.GetReview(ctx, userID)
+	if err != nil {
+		log.Error("Failed to get PRs",
+			slog.String("err", err.Error()),
+		)
+		if errors.Is(err, repositories.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return pullRequests, nil
+}

@@ -36,9 +36,12 @@ func New(
 		panic(err)
 	}
 
+	// Это страшно
 	prAssignment := prassignment.New(
 		log,
 		storage,
+		storage, storage, storage,
+		storage, storage,
 		storage, storage, storage,
 		storage, storage,
 	)

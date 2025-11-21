@@ -21,6 +21,15 @@ type PRAssignment struct {
 	// Объекты для взаимодействия с командами
 	teamCreator  TeamCreator
 	teamProvider TeamProvider
+
+	// Объекты для взаимодействия с пул реквестами
+	prCreator  PRCreator
+	prModifier PRModifier
+	prProvider PRProvider
+
+	// Объекты для взаимодействия с ревьюверами
+	revAssigner ReviewersAssigner
+	revModifier ReviewersModifier
 }
 
 // Интерфейс транзакций
@@ -116,19 +125,37 @@ type ReviewersModifier interface {
 func New(
 	log *slog.Logger,
 	txManager TransactionManager,
+
 	userCreator UserCreator,
 	userModifier UserModifier,
 	userProvider UserProvider,
+
 	teamCreator TeamCreator,
 	teamProvider TeamProvider,
+
+	prCreator PRCreator,
+	prModifier PRModifier,
+	prProvider PRProvider,
+
+	revAssigner ReviewersAssigner,
+	revModifier ReviewersModifier,
 ) *PRAssignment {
 	return &PRAssignment{
-		log:          log,
-		txManager:    txManager,
+		log:       log,
+		txManager: txManager,
+
 		userCreator:  userCreator,
 		userModifier: userModifier,
 		userProvider: userProvider,
+
 		teamCreator:  teamCreator,
 		teamProvider: teamProvider,
+
+		prCreator:  prCreator,
+		prModifier: prModifier,
+		prProvider: prProvider,
+
+		revAssigner: revAssigner,
+		revModifier: revModifier,
 	}
 }
