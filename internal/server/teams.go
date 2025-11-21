@@ -19,12 +19,9 @@ func (s *serverAPI) PostTeamAdd(
 		Members:  make([]models.User, len(req.Body.Members)),
 	}
 	for i, member := range req.Body.Members {
-		teamMember := models.User{
-			UserID:   member.UserId,
-			Username: member.Username,
-			IsActive: member.IsActive,
-		}
-		teamReq.Members[i] = teamMember
+		teamReq.Members[i].UserID = member.UserId
+		teamReq.Members[i].Username = member.Username
+		teamReq.Members[i].IsActive = member.IsActive
 	}
 
 	team, err := s.assign.AddTeam(c, teamReq)
@@ -70,12 +67,9 @@ func convertTeamToApi(team *models.Team) *api.Team {
 		Members:  make([]api.TeamMember, len(team.Members)),
 	}
 	for i, member := range team.Members {
-		teamMember := api.TeamMember{
-			UserId:   member.UserID,
-			Username: member.Username,
-			IsActive: member.IsActive,
-		}
-		teamRes.Members[i] = teamMember
+		teamRes.Members[i].UserId = member.UserID
+		teamRes.Members[i].Username = member.UserID
+		teamRes.Members[i].IsActive = member.IsActive
 	}
 
 	return &teamRes

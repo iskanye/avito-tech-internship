@@ -9,11 +9,27 @@ import (
 )
 
 // (GET /users/getReview)
-func (serverAPI) GetUsersGetReview(
+func (s *serverAPI) GetUsersGetReview(
 	c context.Context,
 	req api.GetUsersGetReviewRequestObject,
 ) (api.GetUsersGetReviewResponseObject, error) {
-	return nil, nil
+	pullRequests, err := s.assign.GetReview(c, req.Params.UserId)
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.GetUsersGetReview200JSONResponse{
+		PullRequests: make([]api.PullRequestShort, len(pullRequests)),
+		UserId:       req.Params.UserId,
+	}
+	for i, pullRequest := range pullRequests {
+		response.PullRequests[i].PullRequestId = pullRequest.ID
+		response.PullRequests[i].PullRequestName = pullRequest.Name
+		response.PullRequests[i].AuthorId = pullRequest.AuthorID
+		response.PullRequests[i].Status = api.PullRequestShortStatus(pullRequest.Status)
+	}
+
+	return response, nil
 }
 
 // (POST /users/setIsActive)
