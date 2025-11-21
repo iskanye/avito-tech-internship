@@ -12,13 +12,20 @@ const (
 	membersCount = 5
 )
 
-func TestTeams_AddTeam_Success(t *testing.T) {
+func TestTeams_AddGetTeam_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	team := s.RandomTeam(membersCount)
 
-	resp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
-	require.IsType(t, &api.PostTeamAdd201JSONResponse{}, resp)
-	require.Equal(t, *team, *resp.JSON201.Team)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.RequireTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	getTeamResp, err := s.Client.GetTeamGetWithResponse(ctx, &api.GetTeamGetParams{
+		TeamName: team.TeamName,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, getTeamResp.JSON200)
+	suite.RequireTeamsEqual(t, team, getTeamResp.JSON200)
 }

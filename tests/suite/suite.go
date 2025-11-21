@@ -2,10 +2,9 @@ package suite
 
 import (
 	"context"
-	"net"
+	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"testing"
 
 	"github.com/iskanye/avito-tech-internship/internal/config"
@@ -30,7 +29,7 @@ func New(t *testing.T) (*Suite, context.Context) {
 
 	hc := http.Client{}
 	c, err := api.NewClientWithResponses(
-		net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
+		fmt.Sprintf("http://localhost:%d", cfg.Port),
 		api.WithHTTPClient(&hc),
 	)
 	require.NoError(t, err)
