@@ -89,7 +89,8 @@ func (s *Storage) GetPullRequest(
 		ctx,
 		`
 		SELECT pull_request_name, author_id, status, created_at, merged_at
-		FROM pull_requests WHERE id = $1; 
+		FROM pull_requests 
+		WHERE id = $1; 
 		`,
 		prID,
 	)
@@ -130,7 +131,8 @@ func (s *Storage) GetPullRequest(
 	getReviewers, err := s.pool.Query(
 		ctx,
 		`
-		SELECT i.user_id FROM reviewers r
+		SELECT i.user_id 
+		FROM reviewers r
 		JOIN users_id i ON r.user_id = i.id
 		WHERE pull_request_id = $1;
 		`,
@@ -219,8 +221,13 @@ func (s *Storage) MergePullRequest(
 	_, err := s.pool.Exec(
 		ctx,
 		`
-		UPDATE pull_requests SET status = $1 WHERE id = 
-		(SELECT id FROM pull_requests_id WHERE pull_request_id = $2);
+		UPDATE pull_requests 
+		SET status = $1 
+		WHERE id = (
+			SELECT id 
+			FROM pull_requests_id 
+			WHERE pull_request_id = $2
+		);
 		`,
 		models.PULLREQUEST_MERGED, pullRequestID,
 	)

@@ -135,12 +135,18 @@ func (s *Storage) ReassignReviewer(
 	getNewReviewer := s.pool.QueryRow(
 		ctx,
 		`
-		SELECT u.id FROM users u
+		SELECT u.id 
+		FROM users u
 		WHERE 
-			u.team_id = (SELECT team_id FROM users WHERE id = $1) AND
+			u.team_id = (
+				SELECT team_id 
+				FROM users 
+				WHERE id = $1
+			) AND
 			u.id <> $2 AND
 			u.id NOT IN (
-				SELECT user_id FROM reviewers
+				SELECT user_id 
+				FROM reviewers
 				WHERE pull_request_id = $3
 			);
 		`,
@@ -160,7 +166,8 @@ func (s *Storage) ReassignReviewer(
 	_, err = s.pool.Exec(
 		ctx,
 		`
-		UPDATE reviewers SET user_id = $1
+		UPDATE reviewers 
+		SET user_id = $1
 		WHERE pull_request_id = $2 AND user_id = $3
 		`,
 		newReviewer, prID, oldReviewer,
