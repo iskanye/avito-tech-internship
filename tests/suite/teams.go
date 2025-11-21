@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (s *Suite) RandomTeam(membersCount int) *api.Team {
+func RandomTeam(membersCount int) *api.Team {
 	team := &api.Team{
 		TeamName: gofakeit.Noun(),
 		Members:  make([]api.TeamMember, membersCount),
