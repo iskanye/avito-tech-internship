@@ -42,7 +42,7 @@ jobs:
         run: nohup go run ./cmd/prassignment &
         
       - name: Wait for service
-        run: sleep 20
+        run: sleep 10
         
       - name: Run tests
         env:          
