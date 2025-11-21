@@ -86,17 +86,12 @@ func (a *PRAssignment) addTeamMember(
 ) error {
 	// Добавляем члена команды
 	err := a.userCreator.AddUser(ctx, member)
-	if err != nil {
-		if errors.Is(err, repositories.ErrUserExists) {
-			// Если член команды уже есть в БД - обновляем его данные
-			err = a.userModifier.UpdateUser(ctx, member)
-			return err
-		}
-
-		return err
+	if errors.Is(err, repositories.ErrUserExists) {
+		// Если член команды уже есть в БД - обновляем его данные
+		return a.userModifier.UpdateUser(ctx, member)
 	}
 
-	return nil
+	return err
 }
 
 // Получить команду по её названию
@@ -113,6 +108,7 @@ func (a *PRAssignment) GetTeam(
 
 	log.Info("Attempting to get team")
 
+	// Получаем команду
 	team, err := a.teamProvider.GetTeam(ctx, teamName)
 	if err != nil {
 		log.Error("Failed to get team",

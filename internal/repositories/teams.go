@@ -78,6 +78,7 @@ func (s *Storage) GetTeam(
 	if err != nil {
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
+	defer getTeamMemdbers.Close()
 
 	team := models.Team{
 		TeamName: teamName,

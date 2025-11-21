@@ -128,3 +128,57 @@ func (s *Storage) GetPullRequest(
 
 	return pullRequest, nil
 }
+
+// Получает PR в который данные пользователь назначен ревьювером
+func (s *Storage) GetReview(
+	ctx context.Context,
+	userID string,
+) ([]models.PullRequest, error) {
+	const op = "repositories.postgres.GetReview"
+
+	// Получаем ID юзера
+	id, err := s.getUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем все пул реквесты в которых данный юзер ревьювер
+	getPullRequests, err := s.pool.Query(
+		ctx,
+		`
+		SELECT ip.pull_request_id, p.pull_request_name, iu.user_id, p.status
+		FROM reviewers r
+		JOIN pull_requests p ON p.id = r.pull_request_id
+		JOIN pull_requests_id ip ON ip.id = r.pull_request_id
+		JOIN users_id iu ON iu.id = p.author_id
+		WHERE r.user_id = $1;
+		`,
+		id,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer getPullRequests.Close()
+
+	// Читаем строчки
+	var pullRequests []models.PullRequest
+	for getPullRequests.Next() {
+		var pullRequest models.PullRequest
+		err := getPullRequests.Scan(
+			&pullRequest.ID,
+			&pullRequest.Name,
+			&pullRequest.AuthorID,
+			&pullRequest.Status,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		pullRequests = append(pullRequests, pullRequest)
+	}
+
+	return pullRequests, nil
+}

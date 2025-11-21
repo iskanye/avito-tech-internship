@@ -84,6 +84,10 @@ type PRProvider interface {
 		ctx context.Context,
 		pullRequestID string,
 	) (models.PullRequest, error)
+	GetReview(
+		ctx context.Context,
+		userID string,
+	) ([]models.PullRequest, error)
 }
 
 type PRModifier interface {
