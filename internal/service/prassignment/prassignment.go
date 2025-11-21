@@ -62,6 +62,42 @@ type TeamProvider interface {
 	) (models.Team, error)
 }
 
+type PRCreator interface {
+	CreatePullRequest(
+		ctx context.Context,
+		pullRequest models.PullRequest,
+	) error
+}
+
+type PRProvider interface {
+	GetPullRequest(
+		ctx context.Context,
+		pullRequestID string,
+	) (models.PullRequest, error)
+}
+
+type PRModifier interface {
+	MergePullRequest(
+		ctx context.Context,
+		pullRequestID string,
+	) error
+}
+
+type ReviewersAssigner interface {
+	AssignReviewers(
+		ctx context.Context,
+		pullRequestID string,
+	) error
+}
+
+type ReviewersModifier interface {
+	ReassignReviewer(
+		ctx context.Context,
+		pullRequestID string,
+		oldReviewerID string,
+	)
+}
+
 func New(
 	log *slog.Logger,
 	userCreator UserCreator,

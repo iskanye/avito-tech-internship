@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
@@ -14,14 +13,12 @@ import (
 // Добавляет PR в базу данных
 func (s Storage) CreatePullRequest(
 	ctx context.Context,
-	pullRequestID string,
-	pullRequestName string,
-	authorID string,
+	pullRequest models.PullRequest,
 ) error {
 	const op = "repositories.postgres.CreatePullRequest"
 
 	// Получаем ID автора
-	id, err := s.getUserID(ctx, authorID)
+	id, err := s.getUserID(ctx, pullRequest.AuthorID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
@@ -33,7 +30,7 @@ func (s Storage) CreatePullRequest(
 	insertID := s.pool.QueryRow(
 		ctx,
 		"INSERT INTO pull_requests_id (pull_request_id) VALUES ($1) RETURNING id;",
-		pullRequestID,
+		pullRequest.ID,
 	)
 
 	var dbID int64
@@ -54,7 +51,7 @@ func (s Storage) CreatePullRequest(
 		pull_request_id, pull_request_name, author_id, status, created_at
 		) VALUES ($1, $2, $3, $4, $5) RETURNING id;
 		`,
-		dbID, pullRequestName, id, models.PULLREQUEST_OPEN, time.Now(),
+		dbID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt,
 	)
 
 	// Получаем ID пулреквеста в базе данных
