@@ -38,6 +38,7 @@ func New(
 
 	prAssignment := prassignment.New(
 		log,
+		storage,
 		storage, storage, storage,
 		storage, storage,
 	)
