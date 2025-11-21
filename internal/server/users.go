@@ -27,6 +27,8 @@ func (s *serverAPI) PostUsersSetIsActive(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, err
+	} else if err != nil {
+		return nil, err
 	}
 
 	response := api.PostUsersSetIsActive200JSONResponse{}
