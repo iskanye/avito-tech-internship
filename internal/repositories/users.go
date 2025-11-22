@@ -82,6 +82,7 @@ func (s *Storage) GetUser(
 ) (models.User, error) {
 	const op = "repositories.postgres.GetUser"
 
+	// Получаем ID пользователя
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

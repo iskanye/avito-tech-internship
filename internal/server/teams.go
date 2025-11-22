@@ -68,7 +68,7 @@ func convertTeamToApi(team *models.Team) *api.Team {
 	}
 	for i, member := range team.Members {
 		teamRes.Members[i].UserId = member.UserID
-		teamRes.Members[i].Username = member.UserID
+		teamRes.Members[i].Username = member.Username
 		teamRes.Members[i].IsActive = member.IsActive
 	}
 
