@@ -42,7 +42,7 @@ func (s *serverAPI) PostUsersSetIsActive(
 		response := api.PostUsersSetIsActive404JSONResponse{}
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
-		return response, err
+		return response, nil
 	} else if err != nil {
 		return nil, err
 	}
