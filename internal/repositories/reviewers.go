@@ -48,14 +48,16 @@ func (s *Storage) AssignReviewers(
 	getReviewers, err := s.pool.Query(
 		ctx,
 		`
-		SELECT id FROM users
+		SELECT u.id 
+		FROM users u
 		WHERE 
-			id <> $1 AND 
-			team_id = (SELECT team_id from users WHERE id = $2) AND 
-			is_active = TRUE
+			u.id <> $1 AND 
+			u.team_id = (SELECT uu.team_id from users uu WHERE uu.id = $1) AND 
+			u.is_active = TRUE
+		ORDER BY RANDOM()
 		LIMIT 2;
 		`,
-		id, authorID,
+		id,
 	)
 	if err != nil {
 		// Если юзеров в команде кроме самого автора нет
