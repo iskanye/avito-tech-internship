@@ -36,7 +36,8 @@ func (a *PRAssignment) CreatePullRequest(
 			)
 			if errors.Is(err, repositories.ErrPRExists) {
 				return ErrPRExists
-			} else if errors.Is(err, repositories.ErrNotFound) {
+			}
+			if errors.Is(err, repositories.ErrNotFound) {
 				return ErrNotFound
 			}
 
@@ -181,7 +182,7 @@ func (a *PRAssignment) ReassignPullRequest(
 		return nil
 	})
 	if err != nil {
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
+		return models.PullRequest{}, "", err
 	}
 
 	// Переназначаем ревьювера в нашем пул реквесте (чтобы не брать его снова из БД)
