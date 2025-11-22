@@ -23,7 +23,7 @@ func RandomPullRequest(authorID string) *api.PostPullRequestCreateJSONRequestBod
 	}
 }
 
-func AssertPullRequestEqual(
+func CheckPullRequestEqual(
 	t *testing.T,
 	pr1 *api.PostPullRequestCreateJSONRequestBody,
 	pr2 *api.PullRequest,

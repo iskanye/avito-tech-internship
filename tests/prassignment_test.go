@@ -130,14 +130,14 @@ func TestUsers_GetReview_Success(t *testing.T) {
 	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pr1)
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
-	suite.AssertPullRequestEqual(t, pr1, addPullRequest.JSON201.Pr)
+	suite.CheckPullRequestEqual(t, pr1, addPullRequest.JSON201.Pr)
 
 	pr2 := suite.RandomPullRequest(team.Members[0].UserId)
 
 	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pr2)
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
-	suite.AssertPullRequestEqual(t, pr2, addPullRequest.JSON201.Pr)
+	suite.CheckPullRequestEqual(t, pr2, addPullRequest.JSON201.Pr)
 
 	// Получаем список пул реквестов второго юзера
 	getReview, err := s.Client.GetUsersGetReviewWithResponse(ctx, &api.GetUsersGetReviewParams{
@@ -169,7 +169,7 @@ func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
-	suite.AssertPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 }
 
 func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
@@ -189,7 +189,7 @@ func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
 	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
-	suite.AssertPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 
 	// Вставляем дубликат
 	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
