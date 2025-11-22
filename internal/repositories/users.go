@@ -94,14 +94,19 @@ func (s *Storage) GetUser(
 	// Получаем данные о пользователе из БД
 	res := s.pool.QueryRow(
 		ctx,
-		"SELECT username, team_id, is_active FROM users WHERE id = $1",
+		`
+		SELECT u.username, t.team_name, u.is_active 
+		FROM users u
+		JOIN teams t ON u.team_id = t.id
+		WHERE u.id = $1;
+		`,
 		id,
 	)
 
 	user := models.User{
 		UserID: userID,
 	}
-	err = res.Scan(&user.Username, &user.TeamID, &user.IsActive)
+	err = res.Scan(&user.Username, &user.TeamName, &user.IsActive)
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
