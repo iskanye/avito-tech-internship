@@ -211,3 +211,51 @@ func TestPullRequests_CreatePullRequest_NotFound(t *testing.T) {
 	assert.Equal(t, api.NOTFOUND, addPullRequest.JSON404.Error.Code)
 	assert.Equal(t, NOT_FOUND, addPullRequest.JSON404.Error.Message)
 }
+
+func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Создаем команду из 4 активных человек, чтобы все учавствовали в пул реквесте
+	team := suite.RandomTeam(4, func() bool { return true })
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Находим четвертого члена команды - именно он должен встать
+	// на место прошлого ревьювера
+	busyMembers := make(map[string]struct{})
+	busyMembers[pullRequest.AuthorId] = struct{}{}
+	busyMembers[addPullRequest.JSON201.Pr.AssignedReviewers[0]] = struct{}{}
+	busyMembers[addPullRequest.JSON201.Pr.AssignedReviewers[1]] = struct{}{}
+
+	var replacedBy string
+	for _, member := range team.Members {
+		if _, ok := busyMembers[member.UserId]; !ok {
+			replacedBy = member.UserId
+			break
+		}
+	}
+
+	// Переназначаем первого ревьювера
+	reassign, err := s.Client.PostPullRequestReassignWithResponse(
+		ctx,
+		api.PostPullRequestReassignJSONRequestBody{
+			PullRequestId: pullRequest.PullRequestId,
+			OldUserId:     addPullRequest.JSON201.Pr.AssignedReviewers[0],
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, reassign.JSON200)
+	assert.Equal(t, replacedBy, reassign.JSON200.ReplacedBy)
+}
