@@ -13,9 +13,11 @@ import (
 const (
 	membersCount = 6
 
-	NOT_FOUND   = "resource not found"
-	TEAM_EXISTS = "team_name already exists"
-	PR_EXISTS   = "PR id already exists"
+	NOT_FOUND    = "resource not found"
+	TEAM_EXISTS  = "team_name already exists"
+	PR_EXISTS    = "PR id already exists"
+	NOT_ASSIGNED = "reviewer is not assigned to this PR"
+	NO_CANDIDATE = "no active replacement candidate in team"
 )
 
 func TestTeams_AddGetTeam_Success(t *testing.T) {
@@ -258,4 +260,137 @@ func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, reassign.JSON200)
 	assert.Equal(t, replacedBy, reassign.JSON200.ReplacedBy)
+}
+
+func TestPullRequests_ReassignReviewer_NonExistingPR(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Переназначаем ревьювера
+	reassign, err := s.Client.PostPullRequestReassignWithResponse(
+		ctx,
+		api.PostPullRequestReassignJSONRequestBody{
+			PullRequestId: gofakeit.UUID(),
+			OldUserId:     gofakeit.UUID(),
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, reassign.JSON404)
+	require.Equal(t, api.NOTFOUND, reassign.JSON404.Error.Code)
+	require.Equal(t, NOT_FOUND, reassign.JSON404.Error.Message)
+}
+
+func TestPullRequests_ReassignReviewer_NonExistingUser(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Создаем команду из 3 активных человек, чтобы все учавствовали в пул реквесте
+	team := suite.RandomTeam(3, func() bool { return true })
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Переназначаем ревьювера
+	reassign, err := s.Client.PostPullRequestReassignWithResponse(
+		ctx,
+		api.PostPullRequestReassignJSONRequestBody{
+			PullRequestId: pullRequest.PullRequestId,
+			OldUserId:     gofakeit.UUID(),
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, reassign.JSON404)
+	assert.Equal(t, api.NOTFOUND, reassign.JSON404.Error.Code)
+	assert.Equal(t, NOT_FOUND, reassign.JSON404.Error.Message)
+}
+
+func TestPullRequests_ReassignReviewer_NotAssigned(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Создаем команду из 4 активных человек, чтобы все учавствовали в пул реквесте
+	team := suite.RandomTeam(4, func() bool { return true })
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Находим четвертого члена команды - он не назначен на этот пул реквест
+	busyMembers := make(map[string]struct{})
+	busyMembers[pullRequest.AuthorId] = struct{}{}
+	busyMembers[addPullRequest.JSON201.Pr.AssignedReviewers[0]] = struct{}{}
+	busyMembers[addPullRequest.JSON201.Pr.AssignedReviewers[1]] = struct{}{}
+
+	var freeUser string
+	for _, member := range team.Members {
+		if _, ok := busyMembers[member.UserId]; !ok {
+			freeUser = member.UserId
+			break
+		}
+	}
+
+	// Переназначаем первого ревьювера
+	reassign, err := s.Client.PostPullRequestReassignWithResponse(
+		ctx,
+		api.PostPullRequestReassignJSONRequestBody{
+			PullRequestId: pullRequest.PullRequestId,
+			OldUserId:     freeUser,
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, reassign.JSON409)
+	assert.Equal(t, api.NOTASSIGNED, reassign.JSON409.Error.Code)
+	assert.Equal(t, NOT_ASSIGNED, reassign.JSON409.Error.Message)
+}
+
+func TestPullRequests_ReassignReviewer_NoCandidate(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Создаем команду из 3 активных человек, чтобы все учавствовали в пул реквесте
+	team := suite.RandomTeam(3, func() bool { return true })
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Переназначаем ревьювера
+	reassign, err := s.Client.PostPullRequestReassignWithResponse(
+		ctx,
+		api.PostPullRequestReassignJSONRequestBody{
+			PullRequestId: pullRequest.PullRequestId,
+			OldUserId:     team.Members[1].UserId,
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, reassign.JSON409)
+	assert.Equal(t, api.NOCANDIDATE, reassign.JSON409.Error.Code)
+	assert.Equal(t, NO_CANDIDATE, reassign.JSON409.Error.Message)
 }
