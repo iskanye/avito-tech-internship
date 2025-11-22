@@ -29,12 +29,14 @@ func (s *serverAPI) PostPullRequestCreate(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if errors.Is(err, prassignment.ErrPRExists) {
+	}
+	if errors.Is(err, prassignment.ErrPRExists) {
 		response := api.PostPullRequestCreate409JSONResponse{}
 		response.Error.Code = api.PREXISTS
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -63,7 +65,8 @@ func (s *serverAPI) PostPullRequestMerge(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -93,22 +96,26 @@ func (s *serverAPI) PostPullRequestReassign(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if errors.Is(err, prassignment.ErrPRMerged) {
+	}
+	if errors.Is(err, prassignment.ErrPRMerged) {
 		response := api.PostPullRequestReassign409JSONResponse{}
 		response.Error.Code = api.PRMERGED
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if errors.Is(err, prassignment.ErrNotAssigned) {
+	}
+	if errors.Is(err, prassignment.ErrNotAssigned) {
 		response := api.PostPullRequestReassign409JSONResponse{}
 		response.Error.Code = api.NOTASSIGNED
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if errors.Is(err, prassignment.ErrNoCandidates) {
+	}
+	if errors.Is(err, prassignment.ErrNoCandidates) {
 		response := api.PostPullRequestReassign409JSONResponse{}
 		response.Error.Code = api.NOCANDIDATE
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 

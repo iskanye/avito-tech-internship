@@ -30,7 +30,8 @@ func (s *serverAPI) PostTeamAdd(
 		response.Error.Code = api.TEAMEXISTS
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -52,7 +53,8 @@ func (s *serverAPI) GetTeamGet(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 

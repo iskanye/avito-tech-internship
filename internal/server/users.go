@@ -14,6 +14,12 @@ func (s *serverAPI) GetUsersGetReview(
 	req api.GetUsersGetReviewRequestObject,
 ) (api.GetUsersGetReviewResponseObject, error) {
 	pullRequests, err := s.assign.GetReview(c, req.Params.UserId)
+	if errors.Is(err, prassignment.ErrNotFound) {
+		response := api.GetUsersGetReview404JSONResponse{}
+		response.Error.Code = api.NOTFOUND
+		response.Error.Message = err.Error()
+		return response, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +49,8 @@ func (s *serverAPI) PostUsersSetIsActive(
 		response.Error.Code = api.NOTFOUND
 		response.Error.Message = err.Error()
 		return response, nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 
