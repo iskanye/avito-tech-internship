@@ -37,7 +37,7 @@ func TestTeams_AddGetTeam_Success(t *testing.T) {
 	suite.RequireTeamsEqual(t, team, getTeamResp.JSON200)
 }
 
-func TestTeam_AddTeam_Dublicate(t *testing.T) {
+func TestTeams_AddTeam_Dublicate(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	team := suite.RandomTeam(membersCount)
@@ -55,7 +55,7 @@ func TestTeam_AddTeam_Dublicate(t *testing.T) {
 	assert.Equal(t, TEAM_EXISTS, resp.JSON400.Error.Message)
 }
 
-func TestTeam_GetTeam_NotFound(t *testing.T) {
+func TestTeams_GetTeam_NotFound(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	// Получить команду, которая не существует
@@ -68,7 +68,7 @@ func TestTeam_GetTeam_NotFound(t *testing.T) {
 	assert.Equal(t, NOT_FOUND, resp.JSON404.Error.Message)
 }
 
-func TestUser_SetIsActive_Success(t *testing.T) {
+func TestUsers_SetIsActive_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	team := suite.RandomTeam(membersCount)
@@ -95,7 +95,7 @@ func TestUser_SetIsActive_Success(t *testing.T) {
 	assert.Equal(t, team.Members[0].IsActive, !setIsActive.JSON200.User.IsActive)
 }
 
-func TestUser_SetIsActive_NotFound(t *testing.T) {
+func TestUsers_SetIsActive_NotFound(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	// Пытаемся изменить состояние активности несуществующего пользователя
@@ -109,4 +109,24 @@ func TestUser_SetIsActive_NotFound(t *testing.T) {
 	require.NotEmpty(t, resp.JSON404)
 	assert.Equal(t, api.NOTFOUND, resp.JSON404.Error.Code)
 	assert.Equal(t, NOT_FOUND, resp.JSON404.Error.Message)
+}
+
+func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	team := suite.RandomTeam(membersCount)
+
+	// Добавить команду
+	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeam.JSON201)
+	suite.RequireTeamsEqual(t, team, addTeam.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.AssertPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 }
