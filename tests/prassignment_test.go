@@ -216,7 +216,7 @@ func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	// Создаем команду из 4 активных человек, чтобы все учавствовали в пул реквесте
-	team := suite.RandomTeam(3, func() bool { return true })
+	team := suite.RandomTeam(4, func() bool { return true })
 
 	// Добавить команду
 	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
