@@ -26,42 +26,51 @@ func (a *PRAssignment) CreatePullRequest(
 
 	log.Info("Attempting to create PR")
 
-	// Создаем пул реквест
-	err := a.prCreator.CreatePullRequest(ctx, pullRequest)
-	if err != nil {
-		log.Error("Failed to create PR",
-			slog.String("err", err.Error()),
-		)
-		if errors.Is(err, repositories.ErrPRExists) {
-			return models.PullRequest{}, ErrPRExists
-		} else if errors.Is(err, repositories.ErrNotFound) {
-			return models.PullRequest{}, ErrNotFound
+	// Начинаем транзакцию
+	err := a.txManager.Do(ctx, func(ctx context.Context) error {
+		// Создаем пул реквест
+		err := a.prCreator.CreatePullRequest(ctx, pullRequest)
+		if err != nil {
+			log.Error("Failed to create PR",
+				slog.String("err", err.Error()),
+			)
+			if errors.Is(err, repositories.ErrPRExists) {
+				return ErrPRExists
+			}
+			if errors.Is(err, repositories.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
+		// Назначаем ревьюверов
+		err = a.revAssigner.AssignReviewers(ctx, pullRequest.ID, pullRequest.AuthorID)
+		if err != nil {
+			log.Error("Failed to assign reviewer",
+				slog.String("err", err.Error()),
+			)
 
-	// Назначаем ревьюверов
-	err = a.revAssigner.AssignReviewers(ctx, pullRequest.ID, pullRequest.AuthorID)
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		// Получаем пул реквест
+		pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
+		if err != nil {
+			// Проверять на ErrNotFound нет смысла
+			log.Error("Failed to get PR",
+				slog.String("err", err.Error()),
+			)
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		log.Info("PR successfully created")
+
+		return nil
+	})
 	if err != nil {
-		log.Error("Failed to assign reviewer",
-			slog.String("err", err.Error()),
-		)
-
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+		return models.PullRequest{}, err
 	}
-
-	// Получаем пул реквест
-	pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
-	if err != nil {
-		// Проверять на ErrNotFound нет смысла
-		log.Error("Failed to get PR",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	log.Info("PR successfully created")
 
 	return pullRequest, nil
 }
@@ -134,37 +143,47 @@ func (a *PRAssignment) ReassignPullRequest(
 
 	log.Info("Attempting to reassign PR reviewer")
 
-	// Получаем пул реквест
-	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
-	if err != nil {
-		log.Error("Failed to get PR",
-			slog.String("err", err.Error()),
-		)
-		if errors.Is(err, repositories.ErrNotFound) {
-			return models.PullRequest{}, "", ErrNotFound
+	// Начинаем транзакцию
+	var pullRequest models.PullRequest
+	var newReviewerID string
+	err := a.txManager.Do(ctx, func(ctx context.Context) error {
+		// Получаем пул реквест
+		pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
+		if err != nil {
+			log.Error("Failed to get PR",
+				slog.String("err", err.Error()),
+			)
+			if errors.Is(err, repositories.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
-	}
+		// Проверяем что пул реквест не MERGED
+		if pullRequest.Status == models.PULLREQUEST_MERGED {
+			log.Error("Cannot reassign reviewers of merged PR")
 
-	// Проверяем что пул реквест не MERGED
-	if pullRequest.Status == models.PULLREQUEST_MERGED {
-		log.Error("Cannot reassign reviewers of merged PR")
-
-		return models.PullRequest{}, "", ErrPRMerged
-	}
-
-	// Переназначаем ревьювера
-	newReviewerID, err := a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
-	if err != nil {
-		log.Error("Failed to reassign PR reviewer",
-			slog.String("err", err.Error()),
-		)
-		if errors.Is(err, repositories.ErrNotFound) {
-			return models.PullRequest{}, "", ErrNotFound
+			return ErrPRMerged
 		}
 
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
+		// Переназначаем ревьювера
+		newReviewerID, err = a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
+		if err != nil {
+			log.Error("Failed to reassign PR reviewer",
+				slog.String("err", err.Error()),
+			)
+			if errors.Is(err, repositories.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return models.PullRequest{}, "", err
 	}
 
 	// Переназначаем ревьювера в нашем пул реквесте (чтобы не брать его снова из БД)

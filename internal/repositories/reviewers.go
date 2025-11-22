@@ -16,6 +16,8 @@ func (s *Storage) AssignReviewers(
 ) error {
 	const op = "repositories.postgres.AssignReviewers"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID автора
 	id, err := s.getUserID(ctx, authorID)
 	if err != nil {
@@ -25,7 +27,7 @@ func (s *Storage) AssignReviewers(
 	}
 
 	// Получаем ID пул реквеста
-	getID := s.pool.QueryRow(
+	getID := conn.QueryRow(
 		ctx,
 		`
 		SELECT p.id 
@@ -45,7 +47,7 @@ func (s *Storage) AssignReviewers(
 	}
 
 	// Получаем ID доступных членов команды
-	getReviewers, err := s.pool.Query(
+	getReviewers, err := conn.Query(
 		ctx,
 		`
 		SELECT u.id 
@@ -69,6 +71,7 @@ func (s *Storage) AssignReviewers(
 	}
 	defer getReviewers.Close()
 
+	reviewers := make([]int64, 0)
 	for getReviewers.Next() {
 		var reviewerID int64
 		err := getReviewers.Scan(&reviewerID)
@@ -76,8 +79,12 @@ func (s *Storage) AssignReviewers(
 			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		// Назначаем ревьювера
-		_, err = s.pool.Exec(
+		reviewers = append(reviewers, reviewerID)
+	}
+
+	for _, reviewerID := range reviewers {
+		// Назначаем ревьюверов
+		_, err = conn.Exec(
 			ctx,
 			`
 			INSERT INTO reviewers (pull_request_id, user_id)
@@ -101,8 +108,10 @@ func (s *Storage) ReassignReviewer(
 ) (string, error) {
 	const op = "repositories.postgres.ReassignReviewer"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID и автора пул реквеста
-	getID := s.pool.QueryRow(
+	getID := conn.QueryRow(
 		ctx,
 		`
 		SELECT p.id, p.author_id
@@ -132,7 +141,7 @@ func (s *Storage) ReassignReviewer(
 	}
 
 	// Получаем нового ревьювера
-	getNewReviewer := s.pool.QueryRow(
+	getNewReviewer := conn.QueryRow(
 		ctx,
 		`
 		SELECT u.id 
@@ -163,7 +172,7 @@ func (s *Storage) ReassignReviewer(
 	}
 
 	// Обновляем старого ревьювера
-	_, err = s.pool.Exec(
+	_, err = conn.Exec(
 		ctx,
 		`
 		UPDATE reviewers 
@@ -177,7 +186,7 @@ func (s *Storage) ReassignReviewer(
 	}
 
 	// Получаем ID нового ревьювера
-	getNewReviewerID := s.pool.QueryRow(
+	getNewReviewerID := conn.QueryRow(
 		ctx,
 		`
 		SELECT i.user_id 

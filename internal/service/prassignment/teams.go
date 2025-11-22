@@ -8,7 +8,6 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
-	"golang.org/x/sync/errgroup"
 )
 
 // Создаёт команду и создаёт/обновляет её пользователей
@@ -25,36 +24,38 @@ func (a *PRAssignment) AddTeam(
 
 	log.Info("Attempting to add team")
 
-	// Вставляем саму команду в БД
-	teamID, err := a.teamCreator.AddTeam(ctx, team.TeamName)
-	if err != nil {
-		log.Error("Failed to add team",
-			slog.String("err", err.Error()),
-		)
-		if errors.Is(err, repositories.ErrTeamExists) {
-			return models.Team{}, ErrTeamExists
+	// Начинаем транзакцию
+	err := a.txManager.Do(ctx, func(ctx context.Context) error {
+		// Вставляем саму команду в БД
+		teamID, err := a.teamCreator.AddTeam(ctx, team.TeamName)
+		if err != nil {
+			log.Error("Failed to add team",
+				slog.String("err", err.Error()),
+			)
+			if errors.Is(err, repositories.ErrTeamExists) {
+				return ErrTeamExists
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return models.Team{}, fmt.Errorf("%s: %w", op, err)
-	}
+		// Вставляем членов команды
+		for _, user := range team.Members {
+			user.TeamID = teamID
+			err := a.addTeamMember(ctx, user)
+			if err != nil {
+				log.Error("Failed to add members",
+					slog.String("err", err.Error()),
+				)
 
-	errGroup, errCtx := errgroup.WithContext(ctx)
+				return fmt.Errorf("%s: %w", op, err)
+			}
+		}
 
-	// Вставляем членов команды
-	for _, user := range team.Members {
-		user.TeamID = teamID
-		errGroup.Go(func() error {
-			return a.addTeamMember(errCtx, user)
-		})
-	}
-
-	err = errGroup.Wait()
+		return nil
+	})
 	if err != nil {
-		log.Error("Failed to add members",
-			slog.String("err", err.Error()),
-		)
-
-		return models.Team{}, fmt.Errorf("%s: %w", op, err)
+		return models.Team{}, err
 	}
 
 	log.Info("Successfully added team")

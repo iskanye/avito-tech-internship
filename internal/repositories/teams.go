@@ -21,8 +21,10 @@ func (s *Storage) AddTeam(
 ) (int64, error) {
 	const op = "repositories.postgres.AddTeam"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Вставить команду в базу
-	insertID := s.pool.QueryRow(
+	insertID := conn.QueryRow(
 		ctx,
 		"INSERT INTO teams (team_name) VALUES ($1) RETURNING id;",
 		teamName,
@@ -48,8 +50,10 @@ func (s *Storage) GetTeam(
 ) (models.Team, error) {
 	const op = "repositories.postgres.GetTeam"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID команды по её названию
-	getTeamID := s.pool.QueryRow(
+	getTeamID := conn.QueryRow(
 		ctx,
 		"SELECT id FROM teams WHERE team_name = $1;",
 		teamName,
@@ -65,7 +69,7 @@ func (s *Storage) GetTeam(
 	}
 
 	// Получаем членов команды
-	getTeamMemdbers, err := s.pool.Query(
+	getTeamMemdbers, err := conn.Query(
 		ctx,
 		`
 		SELECT i.user_id, u.username, u.is_active

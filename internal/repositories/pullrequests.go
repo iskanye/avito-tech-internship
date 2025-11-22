@@ -18,6 +18,8 @@ func (s *Storage) CreatePullRequest(
 ) error {
 	const op = "repositories.postgres.CreatePullRequest"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID автора
 	id, err := s.getUserID(ctx, pullRequest.AuthorID)
 	if err != nil {
@@ -28,7 +30,7 @@ func (s *Storage) CreatePullRequest(
 	}
 
 	// Вставляем ID пул реквеста
-	insertID := s.pool.QueryRow(
+	insertID := conn.QueryRow(
 		ctx,
 		"INSERT INTO pull_requests_id (pull_request_id) VALUES ($1) RETURNING id",
 		pullRequest.ID,
@@ -45,7 +47,7 @@ func (s *Storage) CreatePullRequest(
 	}
 
 	// Вставляем пул реквест
-	_, err = s.pool.Exec(
+	_, err = conn.Exec(
 		ctx,
 		`
 		INSERT INTO pull_requests (
@@ -69,8 +71,10 @@ func (s *Storage) GetPullRequest(
 ) (models.PullRequest, error) {
 	const op = "repositories.postgres.GetPullRequest"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем пул реквест
-	getPR := s.pool.QueryRow(
+	getPR := conn.QueryRow(
 		ctx,
 		`
 		SELECT p.id, p.pull_request_name, p.author_id, p.status, p.created_at, p.merged_at 
@@ -102,7 +106,7 @@ func (s *Storage) GetPullRequest(
 	}
 
 	// Получаем ID автора
-	getAuthorID := s.pool.QueryRow(
+	getAuthorID := conn.QueryRow(
 		ctx,
 		`
 		SELECT i.user_id 
@@ -120,7 +124,7 @@ func (s *Storage) GetPullRequest(
 	}
 
 	// Получаем ревьюверов
-	getReviewers, err := s.pool.Query(
+	getReviewers, err := conn.Query(
 		ctx,
 		`
 		SELECT i.user_id 
@@ -160,6 +164,8 @@ func (s *Storage) GetReview(
 ) ([]models.PullRequest, error) {
 	const op = "repositories.postgres.GetReview"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID юзера
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
@@ -170,7 +176,7 @@ func (s *Storage) GetReview(
 	}
 
 	// Получаем все пул реквесты в которых данный юзер ревьювер
-	getPullRequests, err := s.pool.Query(
+	getPullRequests, err := conn.Query(
 		ctx,
 		`
 		SELECT ip.pull_request_id, p.pull_request_name, iu.user_id, p.status
@@ -216,8 +222,10 @@ func (s *Storage) MergePullRequest(
 ) error {
 	const op = "repositories.postgres.MergePullRequest"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Обновляем статус пул реквеста
-	_, err := s.pool.Exec(
+	_, err := conn.Exec(
 		ctx,
 		`
 		UPDATE pull_requests 
