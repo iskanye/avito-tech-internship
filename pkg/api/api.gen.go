@@ -905,6 +905,7 @@ type GetUsersGetReviewResponse struct {
 		PullRequests []PullRequestShort `json:"pull_requests"`
 		UserId       string             `json:"user_id"`
 	}
+	JSON404 *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -1264,6 +1265,13 @@ func ParseGetUsersGetReviewResponse(rsp *http.Response) (*GetUsersGetReviewRespo
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -1681,6 +1689,15 @@ type GetUsersGetReview200JSONResponse struct {
 func (response GetUsersGetReview200JSONResponse) VisitGetUsersGetReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUsersGetReview404JSONResponse ErrorResponse
+
+func (response GetUsersGetReview404JSONResponse) VisitGetUsersGetReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 
 	return json.NewEncoder(w).Encode(response)
 }
