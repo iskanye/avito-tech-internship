@@ -26,35 +26,35 @@ func (s *Storage) CreatePullRequest(
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Вставляем пул реквест
-	insertPR := s.pool.QueryRow(
-		ctx,
-		`
-		INSERT INTO pull_requests (
-		pull_request_name, author_id, status, created_at, merged_at
-		) VALUES ($1, $2, $3, $4) RETURNING id;
-		`,
-		pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
-	)
-
-	// Получаем ID пулреквеста в базе данных
-	var prID int64
-	err = insertPR.Scan(&prID)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
 	// Вставляем ID пул реквеста
-	_, err = s.pool.Exec(
+	insertID := s.pool.QueryRow(
 		ctx,
-		"INSERT INTO pull_requests_id (id, pull_request_id) VALUES ($1, $2)",
-		prID, pullRequest.ID,
+		"INSERT INTO pull_requests_id (pull_request_id) VALUES ($1) RETURNING id",
+		pullRequest.ID,
 	)
+
+	var prID int64
+	err = insertID.Scan(&prID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
 			return ErrPRExists
 		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Вставляем пул реквест
+	_, err = s.pool.Exec(
+		ctx,
+		`
+		INSERT INTO pull_requests (
+			pull_request_id, pull_request_name, author_id, status, created_at, merged_at
+		) 
+		VALUES ($1, $2, $3, $4, $5);
+		`,
+		prID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
+	)
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -68,36 +68,25 @@ func (s *Storage) GetPullRequest(
 ) (models.PullRequest, error) {
 	const op = "repositories.postgres.GetPullRequest"
 
-	// Получаем ID пул реквеста
-	getID := s.pool.QueryRow(
-		ctx,
-		"SELECT id FROM pull_requests_id WHERE pull_request_id = $1;",
-		pullRequestID,
-	)
-
-	var prID int64
-	err := getID.Scan(&prID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.PullRequest{}, ErrNotFound
-		}
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-
 	// Получаем пул реквест
 	getPR := s.pool.QueryRow(
 		ctx,
 		`
-		SELECT pull_request_name, author_id, status, created_at, merged_at
-		FROM pull_requests 
-		WHERE id = $1; 
+		SELECT p.id, p.pull_request_name, p.author_id, p.status, p.created_at, p.merged_at 
+		FROM pull_requests p 
+		JOIN pull_requests_id i ON p.pull_request_id = i.id
+		WHERE i.pull_request_id = $1;
 		`,
-		prID,
+		pullRequestID,
 	)
 
-	var pullRequest models.PullRequest
-	var author string
-	err = getPR.Scan(
+	pullRequest := models.PullRequest{
+		ID: pullRequestID,
+	}
+	var author, prID int64
+
+	err := getPR.Scan(
+		&prID,
 		&pullRequest.Name,
 		&author,
 		&pullRequest.Status,
@@ -105,7 +94,9 @@ func (s *Storage) GetPullRequest(
 		&pullRequest.MergedAt,
 	)
 	if err != nil {
-		// Нет смысла проверять на ErrNoRows
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.PullRequest{}, ErrNotFound
+		}
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -115,8 +106,8 @@ func (s *Storage) GetPullRequest(
 		`
 		SELECT i.user_id 
 		FROM users u
-		JOIN users_id i ON i.id = u.user_id
-		WHERE u.id = $1;
+		JOIN users_id i ON u.user_id = i.id
+		WHERE i.id = $1;
 		`,
 		author,
 	)
@@ -133,7 +124,8 @@ func (s *Storage) GetPullRequest(
 		`
 		SELECT i.user_id 
 		FROM reviewers r
-		JOIN users_id i ON r.user_id = i.id
+		JOIN users u ON r.user_id = u.id
+		JOIN users_id i ON u.user_id = i.id
 		WHERE pull_request_id = $1;
 		`,
 		prID,
@@ -180,7 +172,8 @@ func (s *Storage) GetReview(
 		FROM reviewers r
 		JOIN pull_requests p ON p.id = r.pull_request_id
 		JOIN pull_requests_id ip ON ip.id = r.pull_request_id
-		JOIN users_id iu ON iu.id = p.author_id
+		JOIN users u ON r.user_id = p.author_id
+		JOIN users_id iu ON u.user_id = iu.id
 		WHERE r.user_id = $1;
 		`,
 		id,

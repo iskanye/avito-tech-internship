@@ -4,16 +4,17 @@ CREATE TABLE IF NOT EXISTS teams
     team_name TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS users_id
+(
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS users
 (
     id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users_id (id),
     username TEXT NOT NULL,
     team_id INTEGER REFERENCES teams (id),
     is_active BOOLEAN NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS users_id
-(
-    id INTEGER REFERENCES users (id),
-    user_id TEXT NOT NULL UNIQUE
 );

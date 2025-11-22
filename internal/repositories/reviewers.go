@@ -102,27 +102,26 @@ func (s *Storage) ReassignReviewer(
 	// Получаем ID и автора пул реквеста
 	getID := s.pool.QueryRow(
 		ctx,
-		"SELECT id, author_id FROM pull_requests_id WHERE pull_request_id = $1",
+		`
+		SELECT p.id, p.author_id
+		FROM pull_requests p
+		JOIN pull_requests_id i ON p.pull_request_id = i.id
+		WHERE i.pull_request_id = $1
+		`,
 		pullRequestID,
 	)
 
 	var prID, authorID int64
 	err := getID.Scan(&prID, &authorID)
 	if err != nil {
-		// Ловить ErrNoRows не имеет смысла
-		// За её отлов ответственна бизнес-логика
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrNotFound
+		}
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	// Получаем ID прошлого ревьювера
-	getOldReviewer := s.pool.QueryRow(
-		ctx,
-		"SELECT id FROM user_id WHERE user_id = $1",
-		oldReviewerID,
-	)
-
-	var oldReviewer int64
-	err = getOldReviewer.Scan(&oldReviewer)
+	oldReviewer, err := s.getUserID(ctx, oldReviewerID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrNotFound
@@ -149,7 +148,7 @@ func (s *Storage) ReassignReviewer(
 				WHERE pull_request_id = $3
 			);
 		`,
-		oldReviewerID, authorID, pullRequestID,
+		oldReviewer, authorID, prID,
 	)
 
 	var newReviewer int64

@@ -17,30 +17,30 @@ func (s *Storage) AddUser(
 ) error {
 	const op = "repositories.postgres.AddUser"
 
-	// Вставляем юзера
+	// Вставляем ID в базу
 	getUserID := s.pool.QueryRow(
 		ctx,
-		"INSERT INTO users (username, team_id, is_active) VALUES ($1, $2, $3) RETURNING id;",
-		user.Username, user.TeamID, user.IsActive,
+		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
+		user.UserID,
 	)
 
 	var id int64
 	err := getUserID.Scan(&id)
 	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	// Вставить ID в базу
-	_, err = s.pool.Exec(
-		ctx,
-		"INSERT INTO users_id (id, user_id) VALUES ($1, $2);",
-		id, user.UserID,
-	)
-	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
 			return ErrUserExists
 		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Вставляем юзера
+	_, err = s.pool.Exec(
+		ctx,
+		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
+		id, user.Username, user.TeamID, user.IsActive,
+	)
+	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -145,7 +145,11 @@ func (s *Storage) getUserID(
 ) (int64, error) {
 	res := s.pool.QueryRow(
 		ctx,
-		"SELECT u.id FROM users_id u WHERE u.user_id = $1",
+		`
+		SELECT u.id 
+		FROM users u 
+		JOIN users_id i ON u.user_id = i.id
+		WHERE i.user_id = $1;`,
 		userID,
 	)
 

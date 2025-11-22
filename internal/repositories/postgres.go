@@ -48,6 +48,7 @@ func (s *Storage) Stop() {
 	s.pool.Close()
 }
 
+// Начинает транзакцию
 func (s *Storage) Begin(c context.Context) error {
 	const op = "repositories.postgres.Begin"
 
@@ -60,10 +61,12 @@ func (s *Storage) Begin(c context.Context) error {
 	return nil
 }
 
+// Отменяет изменения транзакции
 func (s *Storage) Rollback(c context.Context) error {
 	return s.tx.Rollback(c)
 }
 
+// Применяет изменения транзакции
 func (s *Storage) Commit(c context.Context) error {
 	const op = "repositories.postgres.Commit"
 

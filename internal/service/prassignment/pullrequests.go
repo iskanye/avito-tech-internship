@@ -43,6 +43,8 @@ func (a *PRAssignment) CreatePullRequest(
 		)
 		if errors.Is(err, repositories.ErrPRExists) {
 			return models.PullRequest{}, ErrPRExists
+		} else if errors.Is(err, repositories.ErrNotFound) {
+			return models.PullRequest{}, ErrNotFound
 		}
 
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)

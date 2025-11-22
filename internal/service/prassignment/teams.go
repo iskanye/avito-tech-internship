@@ -38,7 +38,7 @@ func (a *PRAssignment) AddTeam(
 	// Вставляем саму команду в БД
 	teamID, err := a.teamCreator.AddTeam(ctx, team.TeamName)
 	if err != nil {
-		log.Error("Failed to get team",
+		log.Error("Failed to add team",
 			slog.String("err", err.Error()),
 		)
 		if errors.Is(err, repositories.ErrTeamExists) {
