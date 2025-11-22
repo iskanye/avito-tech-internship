@@ -21,7 +21,7 @@ const (
 func TestTeams_AddGetTeam_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	team := suite.RandomTeam(membersCount)
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
 
 	// Добавить команду
 	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
@@ -41,7 +41,7 @@ func TestTeams_AddGetTeam_Success(t *testing.T) {
 func TestTeams_AddTeam_Dublicate(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	team := suite.RandomTeam(membersCount)
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
 
 	// Добавляем две одинаковые команды
 	resp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
@@ -72,7 +72,7 @@ func TestTeams_GetTeam_NotFound(t *testing.T) {
 func TestUsers_SetIsActive_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	team := suite.RandomTeam(membersCount)
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
 
 	// Создаем команду
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
@@ -115,7 +115,7 @@ func TestUsers_SetIsActive_NotFound(t *testing.T) {
 func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	team := suite.RandomTeam(membersCount)
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
 
 	// Добавить команду
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
@@ -135,7 +135,7 @@ func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	team := suite.RandomTeam(membersCount)
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
 
 	// Добавить команду
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)

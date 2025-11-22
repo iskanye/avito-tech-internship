@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func RandomTeam(membersCount int) *api.Team {
+func RandomTeam(membersCount int, isActive func() bool) *api.Team {
 	team := &api.Team{
 		TeamName: gofakeit.Noun(),
 		Members:  make([]api.TeamMember, membersCount),
@@ -17,7 +17,7 @@ func RandomTeam(membersCount int) *api.Team {
 
 	for i := range membersCount {
 		member := api.TeamMember{
-			IsActive: gofakeit.Bool(),
+			IsActive: isActive(),
 			UserId:   gofakeit.UUID(),
 			Username: gofakeit.Username(),
 		}
