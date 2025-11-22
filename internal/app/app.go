@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
+	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 	"github.com/gin-gonic/gin"
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
@@ -31,14 +33,18 @@ func New(
 		cfg.Postgres.Password,
 		cfg.Postgres.DBName,
 		cfg.Postgres.MaxConns,
+		trmpgx.DefaultCtxGetter,
 	)
 	if err != nil {
 		panic(err)
 	}
 
+	txManager := manager.Must(trmpgx.NewDefaultFactory(storage.GetPool()))
+
 	// Это страшно
 	prAssignment := prassignment.New(
 		log,
+		txManager,
 		storage, storage, storage,
 		storage, storage,
 		storage, storage, storage,

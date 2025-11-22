@@ -17,8 +17,10 @@ func (s *Storage) AddUser(
 ) error {
 	const op = "repositories.postgres.AddUser"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Вставляем ID в базу
-	getUserID := s.pool.QueryRow(
+	getUserID := conn.QueryRow(
 		ctx,
 		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
 		user.UserID,
@@ -35,7 +37,7 @@ func (s *Storage) AddUser(
 	}
 
 	// Вставляем юзера
-	_, err = s.pool.Exec(
+	_, err = conn.Exec(
 		ctx,
 		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
 		id, user.Username, user.TeamID, user.IsActive,
@@ -54,6 +56,8 @@ func (s *Storage) UpdateUser(
 ) error {
 	const op = "repositories.postgres.AddUser"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID пользователя
 	id, err := s.getUserID(ctx, user.UserID)
 	if err != nil {
@@ -63,7 +67,7 @@ func (s *Storage) UpdateUser(
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = s.pool.Exec(
+	_, err = conn.Exec(
 		ctx,
 		"UPDATE users SET username = $1, team_id = $2, is_active = $3 WHERE id = $4",
 		user.Username, user.TeamID, user.IsActive, id,
@@ -82,6 +86,8 @@ func (s *Storage) GetUser(
 ) (models.User, error) {
 	const op = "repositories.postgres.GetUser"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем ID пользователя
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
@@ -92,7 +98,7 @@ func (s *Storage) GetUser(
 	}
 
 	// Получаем данные о пользователе из БД
-	res := s.pool.QueryRow(
+	res := conn.QueryRow(
 		ctx,
 		`
 		SELECT u.username, t.team_name, u.is_active 
@@ -122,6 +128,8 @@ func (s *Storage) SetActive(
 ) error {
 	const op = "repositories.postgres.SetActive"
 
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
 	// Получаем числовой id
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
@@ -132,7 +140,7 @@ func (s *Storage) SetActive(
 	}
 
 	// Обновляем is_active у пользователя
-	_, err = s.pool.Exec(
+	_, err = conn.Exec(
 		ctx,
 		`UPDATE users SET is_active = $1 WHERE id = $2`,
 		isActive, id,
@@ -149,7 +157,8 @@ func (s *Storage) getUserID(
 	ctx context.Context,
 	userID string,
 ) (int64, error) {
-	res := s.pool.QueryRow(
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+	res := conn.QueryRow(
 		ctx,
 		`
 		SELECT u.id 

@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	trmpgx "github.com/avito-tech/go-transaction-manager/drivers/pgxv5/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Storage struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	getter *trmpgx.CtxGetter
 }
 
 func New(
@@ -19,6 +21,7 @@ func New(
 	password string,
 	dbName string,
 	maxConns int32,
+	getter *trmpgx.CtxGetter,
 ) (*Storage, error) {
 	const op = "repositories.postgres.New"
 
@@ -38,10 +41,15 @@ func New(
 	}
 
 	return &Storage{
-		pool: pool,
+		pool:   pool,
+		getter: getter,
 	}, nil
 }
 
 func (s *Storage) Stop() {
 	s.pool.Close()
+}
+
+func (s *Storage) GetPool() *pgxpool.Pool {
+	return s.pool
 }
