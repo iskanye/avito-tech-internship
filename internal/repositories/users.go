@@ -11,19 +11,14 @@ import (
 )
 
 // Добавляет пользователя в БД.
-// Требует наличия транзакции
 func (s *Storage) AddUser(
 	ctx context.Context,
 	user models.User,
 ) error {
 	const op = "repositories.postgres.AddUser"
 
-	if s.tx == nil {
-		return fmt.Errorf("%s: %w", op, ErrTxNotStrted)
-	}
-
 	// Вставляем ID в базу
-	getUserID := s.tx.QueryRow(
+	getUserID := s.pool.QueryRow(
 		ctx,
 		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
 		user.UserID,
@@ -40,7 +35,7 @@ func (s *Storage) AddUser(
 	}
 
 	// Вставляем юзера
-	_, err = s.tx.Exec(
+	_, err = s.pool.Exec(
 		ctx,
 		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
 		id, user.Username, user.TeamID, user.IsActive,
@@ -52,17 +47,12 @@ func (s *Storage) AddUser(
 	return nil
 }
 
-// Обновить данные пользователя в БД.
-// Требует наличия транзакции
+// Обновить данные пользователя в БД
 func (s *Storage) UpdateUser(
 	ctx context.Context,
 	user models.User,
 ) error {
 	const op = "repositories.postgres.AddUser"
-
-	if s.tx == nil {
-		return fmt.Errorf("%s: %w", op, ErrTxNotStrted)
-	}
 
 	// Получаем ID пользователя
 	id, err := s.getUserID(ctx, user.UserID)
@@ -73,7 +63,7 @@ func (s *Storage) UpdateUser(
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	_, err = s.tx.Exec(
+	_, err = s.pool.Exec(
 		ctx,
 		"UPDATE users SET username = $1, team_id = $2, is_active = $3 WHERE id = $4",
 		user.Username, user.TeamID, user.IsActive, id,

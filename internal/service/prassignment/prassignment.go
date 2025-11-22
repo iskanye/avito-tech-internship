@@ -10,9 +10,6 @@ import (
 type PRAssignment struct {
 	log *slog.Logger
 
-	// Объект управления транзакциями БД
-	txManager TransactionManager
-
 	// Объекты для взаимодействия с пользователями
 	userCreator  UserCreator
 	userModifier UserModifier
@@ -124,7 +121,6 @@ type ReviewersModifier interface {
 
 func New(
 	log *slog.Logger,
-	txManager TransactionManager,
 
 	userCreator UserCreator,
 	userModifier UserModifier,
@@ -141,8 +137,7 @@ func New(
 	revModifier ReviewersModifier,
 ) *PRAssignment {
 	return &PRAssignment{
-		log:       log,
-		txManager: txManager,
+		log: log,
 
 		userCreator:  userCreator,
 		userModifier: userModifier,

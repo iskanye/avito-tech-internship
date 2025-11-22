@@ -25,18 +25,8 @@ func (a *PRAssignment) CreatePullRequest(
 
 	log.Info("Attempting to create PR")
 
-	// Начинаем транзакцию
-	err := a.txManager.Begin(ctx)
-	if err != nil {
-		log.Error("Failed to start transaction",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-	defer a.txManager.Rollback(ctx)
-
 	// Создаем пул реквест
-	err = a.prCreator.CreatePullRequest(ctx, pullRequest)
+	err := a.prCreator.CreatePullRequest(ctx, pullRequest)
 	if err != nil {
 		log.Error("Failed to create PR",
 			slog.String("err", err.Error()),
@@ -57,14 +47,6 @@ func (a *PRAssignment) CreatePullRequest(
 			slog.String("err", err.Error()),
 		)
 
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	// Сохраняем изменения
-	if err = a.txManager.Commit(ctx); err != nil {
-		log.Error("Failed to commit transaction",
-			slog.String("err", err.Error()),
-		)
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 

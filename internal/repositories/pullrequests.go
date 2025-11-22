@@ -10,17 +10,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Добавляет PR в базу данных.
-// Требует наличия транзакции
+// Добавляет PR в базу данных
 func (s *Storage) CreatePullRequest(
 	ctx context.Context,
 	pullRequest models.PullRequest,
 ) error {
 	const op = "repositories.postgres.CreatePullRequest"
-
-	if s.tx == nil {
-		return fmt.Errorf("%s: %w", op, ErrTxNotStrted)
-	}
 
 	// Получаем ID автора
 	id, err := s.getUserID(ctx, pullRequest.AuthorID)
@@ -32,7 +27,7 @@ func (s *Storage) CreatePullRequest(
 	}
 
 	// Вставляем ID пул реквеста
-	insertID := s.tx.QueryRow(
+	insertID := s.pool.QueryRow(
 		ctx,
 		"INSERT INTO pull_requests_id (pull_request_id) VALUES ($1) RETURNING id",
 		pullRequest.ID,
@@ -49,7 +44,7 @@ func (s *Storage) CreatePullRequest(
 	}
 
 	// Вставляем пул реквест
-	_, err = s.tx.Exec(
+	_, err = s.pool.Exec(
 		ctx,
 		`
 		INSERT INTO pull_requests (
