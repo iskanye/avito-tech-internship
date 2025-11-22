@@ -6,11 +6,13 @@ RUN go mod download
 COPY . .
 RUN go build -o /bin/prassignment ./cmd/prassignment/main.go
 RUN go build -o /bin/migrator ./cmd/migrator/main.go
+RUN go test -c -o /bin/tests ./tests
 
 # Запуск
 FROM alpine
 USER root
 WORKDIR /home/app
+COPY --from=builder /bin/tests ./
 COPY --from=builder /bin/prassignment ./
 COPY --from=builder /bin/migrator ./
 COPY --from=builder /app/config ./config
