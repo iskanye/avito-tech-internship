@@ -216,7 +216,7 @@ func (s *Storage) MergePullRequest(
 		`
 		UPDATE pull_requests 
 		SET status = $1 
-		WHERE id = (
+		WHERE pull_request_id = (
 			SELECT id 
 			FROM pull_requests_id 
 			WHERE pull_request_id = $2
