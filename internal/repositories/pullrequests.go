@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
@@ -174,9 +175,9 @@ func (s *Storage) GetReview(
 		`
 		SELECT ip.pull_request_id, p.pull_request_name, iu.user_id, p.status
 		FROM reviewers r
-		JOIN pull_requests p ON p.id = r.pull_request_id
-		JOIN pull_requests_id ip ON ip.id = r.pull_request_id
-		JOIN users u ON r.user_id = p.author_id
+		JOIN pull_requests p ON r.pull_request_id = p.id
+		JOIN pull_requests_id ip ON ip.id = p.pull_request_id
+		JOIN users u ON u.id = r.user_id
 		JOIN users_id iu ON u.user_id = iu.id
 		WHERE r.user_id = $1;
 		`,
@@ -211,6 +212,7 @@ func (s *Storage) GetReview(
 func (s *Storage) MergePullRequest(
 	ctx context.Context,
 	pullRequestID string,
+	mergedAt time.Time,
 ) error {
 	const op = "repositories.postgres.MergePullRequest"
 
@@ -219,14 +221,14 @@ func (s *Storage) MergePullRequest(
 		ctx,
 		`
 		UPDATE pull_requests 
-		SET status = $1 
+		SET status = $1, merged_at = $2 
 		WHERE pull_request_id = (
 			SELECT id 
 			FROM pull_requests_id 
-			WHERE pull_request_id = $2
+			WHERE pull_request_id = $3
 		);
 		`,
-		models.PULLREQUEST_MERGED, pullRequestID,
+		models.PULLREQUEST_MERGED, mergedAt, pullRequestID,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

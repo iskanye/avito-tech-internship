@@ -20,7 +20,7 @@ func (s *serverAPI) PostPullRequestCreate(
 		Name:      req.Body.PullRequestName,
 		AuthorID:  req.Body.AuthorId,
 		Status:    models.PULLREQUEST_OPEN,
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Truncate(time.Second),
 	}
 
 	pullRequest, err := s.assign.CreatePullRequest(c, pullRequest)

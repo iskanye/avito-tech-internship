@@ -3,6 +3,7 @@ package prassignment
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 )
@@ -93,6 +94,7 @@ type PRModifier interface {
 	MergePullRequest(
 		ctx context.Context,
 		pullRequestID string,
+		mergedAt time.Time,
 	) error
 }
 

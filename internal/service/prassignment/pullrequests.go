@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
@@ -79,10 +80,10 @@ func (a *PRAssignment) MergePullRequest(
 
 	log.Info("Attempting to merge PR")
 
-	// Мерджим пул реквест
-	err := a.prModifier.MergePullRequest(ctx, pullRequestID)
+	// Получаем пул реквест
+	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
 	if err != nil {
-		log.Error("Failed to merge PR",
+		log.Error("Failed to get PR",
 			slog.String("err", err.Error()),
 		)
 		if errors.Is(err, repositories.ErrNotFound) {
@@ -92,13 +93,23 @@ func (a *PRAssignment) MergePullRequest(
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Получаем пул реквест
-	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
+	// Проверяем замерджен ли он уже
+	if pullRequest.Status == models.PULLREQUEST_MERGED {
+		log.Info("PR already merged")
+		return pullRequest, nil
+	}
+
+	pullRequest.MergedAt = time.Now().Truncate(time.Second)
+	pullRequest.Status = models.PULLREQUEST_MERGED
+
+	// Мерджим пул реквест
+	err = a.prModifier.MergePullRequest(ctx, pullRequestID, pullRequest.MergedAt)
 	if err != nil {
 		// Проверять на ErrNotFound нет смысла
-		log.Error("Failed to get PR",
+		log.Error("Failed to merge PR",
 			slog.String("err", err.Error()),
 		)
+
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
