@@ -179,12 +179,16 @@ func (s *Storage) ReassignReviewer(
 	// Получаем ID нового ревьювера
 	getNewReviewerID := s.pool.QueryRow(
 		ctx,
-		"SELECT user_id FROM users_id WHERE id = $1",
+		`
+		SELECT i.user_id 
+		FROM users u
+		JOIN users_id i ON u.user_id = i.id 
+		WHERE u.id = $1`,
 		newReviewer,
 	)
 
 	var newReviewerID string
-	err = getNewReviewerID.Scan(&getNewReviewerID)
+	err = getNewReviewerID.Scan(&newReviewerID)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
