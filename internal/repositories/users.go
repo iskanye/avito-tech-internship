@@ -88,15 +88,6 @@ func (s *Storage) GetUser(
 
 	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
 
-	// Получаем ID пользователя
-	id, err := s.getUserID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, ErrNotFound
-		}
-		return models.User{}, fmt.Errorf("%s: %w", op, err)
-	}
-
 	// Получаем данные о пользователе из БД
 	res := conn.QueryRow(
 		ctx,
@@ -104,16 +95,20 @@ func (s *Storage) GetUser(
 		SELECT u.username, t.team_name, u.is_active 
 		FROM users u
 		JOIN teams t ON u.team_id = t.id
-		WHERE u.id = $1;
+		JOIN users_id i ON u.user_id = i.id
+		WHERE i.user_id = $1;
 		`,
-		id,
+		userID,
 	)
 
 	user := models.User{
 		UserID: userID,
 	}
-	err = res.Scan(&user.Username, &user.TeamName, &user.IsActive)
+	err := res.Scan(&user.Username, &user.TeamName, &user.IsActive)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.User{}, ErrNotFound
+		}
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
 

@@ -148,6 +148,20 @@ func (a *PRAssignment) ReassignPullRequest(
 	var pullRequest models.PullRequest
 	var newReviewerID string
 	err := a.txManager.Do(ctx, func(ctx context.Context) error {
+		// Проверяем что пользователя вообще существует
+		_, err := a.userProvider.GetUser(ctx, oldReviewerID)
+		if err != nil {
+			log.Error("Failed to get old reviewer",
+				slog.String("err", err.Error()),
+			)
+
+			if errors.Is(err, repositories.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
 		// Получаем пул реквест
 		pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
 		if err != nil {
