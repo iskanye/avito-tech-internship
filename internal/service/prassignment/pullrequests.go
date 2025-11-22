@@ -97,18 +97,8 @@ func (a *PRAssignment) MergePullRequest(
 
 	log.Info("Attempting to merge PR")
 
-	// Начинаем транзакцию
-	err := a.txManager.Begin(ctx)
-	if err != nil {
-		log.Error("Failed to start transaction",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-	defer a.txManager.Rollback(ctx)
-
 	// Мерджим пул реквест
-	err = a.prModifier.MergePullRequest(ctx, pullRequestID)
+	err := a.prModifier.MergePullRequest(ctx, pullRequestID)
 	if err != nil {
 		log.Error("Failed to merge PR",
 			slog.String("err", err.Error()),
@@ -117,14 +107,6 @@ func (a *PRAssignment) MergePullRequest(
 			return models.PullRequest{}, ErrNotFound
 		}
 
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	// Сохраняем изменения
-	if err = a.txManager.Commit(ctx); err != nil {
-		log.Error("Failed to commit transaction",
-			slog.String("err", err.Error()),
-		)
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -143,6 +125,7 @@ func (a *PRAssignment) MergePullRequest(
 	return pullRequest, nil
 }
 
+// Переназначает ревьювера пул реквеста
 func (a *PRAssignment) ReassignPullRequest(
 	ctx context.Context,
 	pullRequestID string,
@@ -178,16 +161,6 @@ func (a *PRAssignment) ReassignPullRequest(
 		return models.PullRequest{}, "", ErrPRMerged
 	}
 
-	// Начинаем транзакцию
-	err = a.txManager.Begin(ctx)
-	if err != nil {
-		log.Error("Failed to start transaction",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
-	}
-	defer a.txManager.Rollback(ctx)
-
 	// Переназначаем ревьювера
 	newReviewerID, err := a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
 	if err != nil {
@@ -198,14 +171,6 @@ func (a *PRAssignment) ReassignPullRequest(
 			return models.PullRequest{}, "", ErrNotFound
 		}
 
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
-	}
-
-	// Сохраняем изменения
-	if err = a.txManager.Commit(ctx); err != nil {
-		log.Error("Failed to commit transaction",
-			slog.String("err", err.Error()),
-		)
 		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
 	}
 

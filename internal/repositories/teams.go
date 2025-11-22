@@ -14,15 +14,20 @@ import (
 // для которых прописано UNIQUE
 const UNIQUE_VIOLATION_CODE = "23505"
 
-// Вносит имя команды в БД и возвращает её ID
+// Вносит имя команды в БД и возвращает её ID.
+// Требует наличия транзакции
 func (s *Storage) AddTeam(
 	ctx context.Context,
 	teamName string,
 ) (int64, error) {
 	const op = "repositories.postgres.AddTeam"
 
+	if s.tx == nil {
+		return 0, fmt.Errorf("%s: %w", op, ErrTxNotStrted)
+	}
+
 	// Вставить команду в базу
-	insertID := s.pool.QueryRow(
+	insertID := s.tx.QueryRow(
 		ctx,
 		"INSERT INTO teams (team_name) VALUES ($1) RETURNING id;",
 		teamName,
@@ -41,7 +46,8 @@ func (s *Storage) AddTeam(
 	return id, nil
 }
 
-// Получает команду по ее названию
+// Получает команду по ее названию.
+// Требует наличия транзакции
 func (s *Storage) GetTeam(
 	ctx context.Context,
 	teamName string,
