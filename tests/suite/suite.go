@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/pkg/api"
@@ -23,8 +24,14 @@ func New(t *testing.T) (*Suite, context.Context) {
 	cfg := config.MustLoadPath(configPath())
 	cfg.LoadEnv()
 
+	сtx, cancel := context.WithTimeout(
+		context.Background(),
+		time.Duration(cfg.Timeout)*time.Millisecond,
+	)
+
 	t.Cleanup(func() {
 		t.Helper()
+		cancel()
 	})
 
 	hc := http.Client{}
@@ -36,7 +43,7 @@ func New(t *testing.T) (*Suite, context.Context) {
 
 	return &Suite{
 		Client: c,
-	}, context.TODO()
+	}, сtx
 }
 
 func configPath() string {
