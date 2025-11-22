@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Добавляет пользователя в БД
+// Добавляет пользователя в БД.
 func (s *Storage) AddUser(
 	ctx context.Context,
 	user models.User,
@@ -155,7 +155,8 @@ func (s *Storage) getUserID(
 		SELECT u.id 
 		FROM users u 
 		JOIN users_id i ON u.user_id = i.id
-		WHERE i.user_id = $1;`,
+		WHERE i.user_id = $1;
+		`,
 		userID,
 	)
 

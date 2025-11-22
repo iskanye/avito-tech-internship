@@ -25,16 +25,6 @@ func (a *PRAssignment) AddTeam(
 
 	log.Info("Attempting to add team")
 
-	// Начинаем транзакцию
-	err := a.txManager.Begin(ctx)
-	if err != nil {
-		log.Error("Failed to start transaction",
-			slog.String("err", err.Error()),
-		)
-		return models.Team{}, fmt.Errorf("%s: %w", op, err)
-	}
-	defer a.txManager.Rollback(ctx)
-
 	// Вставляем саму команду в БД
 	teamID, err := a.teamCreator.AddTeam(ctx, team.TeamName)
 	if err != nil {
@@ -48,9 +38,9 @@ func (a *PRAssignment) AddTeam(
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Параллелизируем каждую вставку в БД
 	errGroup, errCtx := errgroup.WithContext(ctx)
 
+	// Вставляем членов команды
 	for _, user := range team.Members {
 		user.TeamID = teamID
 		errGroup.Go(func() error {
@@ -58,20 +48,12 @@ func (a *PRAssignment) AddTeam(
 		})
 	}
 
-	// Ждём выполнения всех вставок
 	err = errGroup.Wait()
 	if err != nil {
-		log.Error("Failed to add team members",
+		log.Error("Failed to add members",
 			slog.String("err", err.Error()),
 		)
-		return models.Team{}, fmt.Errorf("%s: %w", op, err)
-	}
 
-	// Сохраняем изменения
-	if err = a.txManager.Commit(ctx); err != nil {
-		log.Error("Failed to commit transaction",
-			slog.String("err", err.Error()),
-		)
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
 
