@@ -29,13 +29,6 @@ type PRAssignment struct {
 	revModifier ReviewersModifier
 }
 
-// Интерфейс транзакций
-type TransactionManager interface {
-	Begin(context.Context) error
-	Rollback(context.Context) error
-	Commit(context.Context) error
-}
-
 // Интерфейсы для работы сервиса
 
 type UserCreator interface {
