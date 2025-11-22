@@ -15,6 +15,7 @@ const (
 
 	NOT_FOUND   = "resource not found"
 	TEAM_EXISTS = "team_name already exists"
+	PR_EXISTS   = "PR id already exists"
 )
 
 func TestTeams_AddGetTeam_Success(t *testing.T) {
@@ -129,4 +130,34 @@ func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.AssertPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+}
+
+func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	team := suite.RandomTeam(membersCount)
+
+	// Добавить команду
+	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeam.JSON201)
+	suite.RequireTeamsEqual(t, team, addTeam.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.AssertPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Вставляем дубликат
+	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON409)
+	assert.Equal(t, api.PREXISTS, addPullRequest.JSON409.Error.Code)
+	assert.Equal(t, api.PREXISTS, addPullRequest.JSON409.Error.Message)
+}
+
+func TestPullRequests_CreatePullRequest_NotFound(t *testing.T) {
 }
