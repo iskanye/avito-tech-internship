@@ -154,6 +154,19 @@ func TestUsers_GetReview_Success(t *testing.T) {
 	)
 }
 
+func TestUsers_GetReview_NotFound(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Получаем список пул реквестов
+	getReview, err := s.Client.GetUsersGetReviewWithResponse(ctx, &api.GetUsersGetReviewParams{
+		UserId: gofakeit.UUID(),
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, getReview.JSON404)
+	assert.Equal(t, api.NOTFOUND, getReview.JSON404.Error.Code)
+	assert.Equal(t, NOT_FOUND, getReview.JSON404.Error.Message)
+}
+
 func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
