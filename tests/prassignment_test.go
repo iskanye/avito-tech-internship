@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	membersCount = 5
+	membersCount = 6
 
 	NOT_FOUND   = "resource not found"
 	TEAM_EXISTS = "team_name already exists"

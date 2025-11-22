@@ -18,6 +18,7 @@ type Suite struct {
 
 func New(t *testing.T) (*Suite, context.Context) {
 	t.Helper()
+	t.Parallel()
 
 	cfg := config.MustLoadPath(configPath())
 	cfg.LoadEnv()

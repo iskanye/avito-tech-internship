@@ -31,7 +31,7 @@ func CheckPullRequestEqual(
 	assert.Equal(t, pr1.PullRequestId, pr2.PullRequestId)
 	assert.Equal(t, pr1.PullRequestName, pr2.PullRequestName)
 	assert.Equal(t, pr1.AuthorId, pr2.AuthorId)
-	assert.Equal(t, api.PullRequestStatusOPEN, pr2.Status)
+	assert.Equal(t, string(api.PullRequestStatusOPEN), string(pr2.Status))
 
 	assert.InDelta(t, time.Now().Unix(), pr2.CreatedAt.Unix(), timeDelta)
 }
@@ -52,7 +52,7 @@ func CheckPullRequestsEqual(
 		require.True(t, ok)
 		assert.Equal(t, pr1.Name, pr2.PullRequestName)
 		assert.Equal(t, pr1.AuthorID, pr2.AuthorId)
-		assert.Equal(t, pr1.Status, pr2.Status)
+		assert.Equal(t, string(pr1.Status), string(pr2.Status))
 	}
 }
 

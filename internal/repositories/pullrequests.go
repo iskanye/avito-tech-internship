@@ -177,7 +177,7 @@ func (s *Storage) GetReview(
 		FROM reviewers r
 		JOIN pull_requests p ON r.pull_request_id = p.id
 		JOIN pull_requests_id ip ON ip.id = p.pull_request_id
-		JOIN users u ON u.id = r.user_id
+		JOIN users u ON p.author_id = u.id
 		JOIN users_id iu ON u.user_id = iu.id
 		WHERE r.user_id = $1;
 		`,
