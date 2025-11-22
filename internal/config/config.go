@@ -11,6 +11,7 @@ type Config struct {
 	Host     string         `yaml:"host" env-default:"localhost"`
 	Port     int            `yaml:"port"`
 	Postgres PostgresConfig `yaml:"postgres"`
+	Timeout  int            `yaml:"timeout"` // В миллисекундах
 }
 
 type PostgresConfig struct {
@@ -46,9 +47,15 @@ func MustLoadPath(configPath string) *Config {
 }
 
 func (c *Config) LoadEnv() {
-	c.Postgres.User = os.Getenv("POSTGRES_USER")
-	c.Postgres.Password = os.Getenv("POSTGRES_PASSWORD")
-	c.Postgres.DBName = os.Getenv("POSTGRES_DB")
+	if c.Postgres.User == "" {
+		c.Postgres.User = os.Getenv("POSTGRES_USER")
+	}
+	if c.Postgres.Password == "" {
+		c.Postgres.Password = os.Getenv("POSTGRES_PASSWORD")
+	}
+	if c.Postgres.DBName == "" {
+		c.Postgres.DBName = os.Getenv("POSTGRES_DB")
+	}
 }
 
 func fetchConfigPath() string {
