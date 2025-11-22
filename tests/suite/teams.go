@@ -11,7 +11,7 @@ import (
 
 func RandomTeam(membersCount int, isActive func() bool) *api.Team {
 	team := &api.Team{
-		TeamName: gofakeit.Noun(),
+		TeamName: gofakeit.UUID(),
 		Members:  make([]api.TeamMember, membersCount),
 	}
 
