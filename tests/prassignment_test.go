@@ -112,6 +112,46 @@ func TestUsers_SetIsActive_NotFound(t *testing.T) {
 	assert.Equal(t, NOT_FOUND, resp.JSON404.Error.Message)
 }
 
+func TestUsers_GetReview_Success(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Создаем команду из 3 активных человек, чтобы все учавствовали в пул реквесте
+	team := suite.RandomTeam(3, func() bool { return true })
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.RequireTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	// Cоздаем два пул реквеста с одним автором
+	pr1 := suite.RandomPullRequest(team.Members[0].UserId)
+
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pr1)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.AssertPullRequestEqual(t, pr1, addPullRequest.JSON201.Pr)
+
+	pr2 := suite.RandomPullRequest(team.Members[0].UserId)
+
+	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pr2)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.AssertPullRequestEqual(t, pr2, addPullRequest.JSON201.Pr)
+
+	// Получаем список пул реквестов второго юзера
+	getReview, err := s.Client.GetUsersGetReviewWithResponse(ctx, &api.GetUsersGetReviewParams{
+		UserId: team.Members[1].UserId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, getReview.JSON200)
+	suite.CheckPullRequestsEqual(t,
+		getReview.JSON200.PullRequests,
+		suite.PullRequestCreateToModel(pr1),
+		suite.PullRequestCreateToModel(pr2),
+	)
+}
+
 func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
