@@ -50,7 +50,7 @@ func (s *Storage) CreatePullRequest(
 		INSERT INTO pull_requests (
 			pull_request_id, pull_request_name, author_id, status, created_at, merged_at
 		) 
-		VALUES ($1, $2, $3, $4, $5);
+		VALUES ($1, $2, $3, $4, $5, $6);
 		`,
 		prID, pullRequest.Name, id, pullRequest.Status, pullRequest.CreatedAt, pullRequest.MergedAt,
 	)
