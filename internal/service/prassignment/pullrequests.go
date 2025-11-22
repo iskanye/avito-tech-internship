@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
@@ -167,6 +168,14 @@ func (a *PRAssignment) ReassignPullRequest(
 			return ErrPRMerged
 		}
 
+		// Проверяем что юзер назначен ревьювером
+		isReviewer := slices.Contains(pullRequest.AssignedReviewers, oldReviewerID)
+		if !isReviewer {
+			log.Error("Reviewer is not assigned to this PR")
+
+			return ErrNotAssigned
+		}
+
 		// Переназначаем ревьювера
 		newReviewerID, err = a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
 		if err != nil {
@@ -175,6 +184,8 @@ func (a *PRAssignment) ReassignPullRequest(
 			)
 			if errors.Is(err, repositories.ErrNotFound) {
 				return ErrNotFound
+			} else if errors.Is(err, repositories.ErrNoCandidates) {
+				return ErrNoCandidates
 			}
 
 			return fmt.Errorf("%s: %w", op, err)

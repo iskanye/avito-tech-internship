@@ -165,8 +165,9 @@ func (s *Storage) ReassignReviewer(
 	var newReviewer int64
 	err = getNewReviewer.Scan(&newReviewer)
 	if err != nil {
+		// Нету подходящего ревьювера
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrNotFound
+			return "", ErrNoCandidates
 		}
 		return "", fmt.Errorf("%s: %w", op, err)
 	}

@@ -98,6 +98,16 @@ func (s *serverAPI) PostPullRequestReassign(
 		response.Error.Code = api.PRMERGED
 		response.Error.Message = err.Error()
 		return response, nil
+	} else if errors.Is(err, prassignment.ErrNotAssigned) {
+		response := api.PostPullRequestReassign409JSONResponse{}
+		response.Error.Code = api.NOTASSIGNED
+		response.Error.Message = err.Error()
+		return response, nil
+	} else if errors.Is(err, prassignment.ErrNoCandidates) {
+		response := api.PostPullRequestReassign409JSONResponse{}
+		response.Error.Code = api.NOCANDIDATE
+		response.Error.Message = err.Error()
+		return response, nil
 	} else if err != nil {
 		return nil, err
 	}
