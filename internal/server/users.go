@@ -51,6 +51,7 @@ func (s *serverAPI) PostUsersSetIsActive(
 	response.User = &api.User{
 		UserId:   user.UserID,
 		Username: user.Username,
+		TeamName: user.TeamName,
 		IsActive: user.IsActive,
 	}
 	return response, nil
