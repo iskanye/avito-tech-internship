@@ -52,13 +52,13 @@ func (a *PRAssignment) AddTeam(
 			}
 		}
 
-		log.Info("Successfully added team")
-
 		return nil
 	})
 	if err != nil {
 		return models.Team{}, err
 	}
+
+	log.Info("Successfully added team")
 
 	return team, nil
 }

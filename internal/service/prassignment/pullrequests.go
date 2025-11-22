@@ -54,23 +54,23 @@ func (a *PRAssignment) CreatePullRequest(
 			return fmt.Errorf("%s: %w", op, err)
 		}
 
+		// Получаем пул реквест
+		pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
+		if err != nil {
+			// Проверять на ErrNotFound нет смысла
+			log.Error("Failed to get PR",
+				slog.String("err", err.Error()),
+			)
+			return fmt.Errorf("%s: %w", op, err)
+		}
+
+		log.Info("PR successfully created")
+
 		return nil
 	})
 	if err != nil {
 		return models.PullRequest{}, err
 	}
-
-	// Получаем пул реквест
-	pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
-	if err != nil {
-		// Проверять на ErrNotFound нет смысла
-		log.Error("Failed to get PR",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
-	}
-
-	log.Info("PR successfully created")
 
 	return pullRequest, nil
 }
@@ -143,29 +143,30 @@ func (a *PRAssignment) ReassignPullRequest(
 
 	log.Info("Attempting to reassign PR reviewer")
 
-	// Получаем пул реквест
-	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
-	if err != nil {
-		log.Error("Failed to get PR",
-			slog.String("err", err.Error()),
-		)
-		if errors.Is(err, repositories.ErrNotFound) {
-			return models.PullRequest{}, "", ErrNotFound
+	// Начинаем транзакцию
+	var pullRequest models.PullRequest
+	var newReviewerID string
+	err := a.txManager.Do(ctx, func(ctx context.Context) error {
+		// Получаем пул реквест
+		pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
+		if err != nil {
+			log.Error("Failed to get PR",
+				slog.String("err", err.Error()),
+			)
+			if errors.Is(err, repositories.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
-	}
+		// Проверяем что пул реквест не MERGED
+		if pullRequest.Status == models.PULLREQUEST_MERGED {
+			log.Error("Cannot reassign reviewers of merged PR")
 
-	// Проверяем что пул реквест не MERGED
-	if pullRequest.Status == models.PULLREQUEST_MERGED {
-		log.Error("Cannot reassign reviewers of merged PR")
+			return ErrPRMerged
+		}
 
-		return models.PullRequest{}, "", ErrPRMerged
-	}
-
-	// Начинаем транзакцию
-	var newReviewerID string
-	err = a.txManager.Do(ctx, func(ctx context.Context) error {
 		// Переназначаем ревьювера
 		newReviewerID, err = a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
 		if err != nil {

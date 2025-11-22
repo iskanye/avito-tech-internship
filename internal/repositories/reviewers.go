@@ -71,6 +71,7 @@ func (s *Storage) AssignReviewers(
 	}
 	defer getReviewers.Close()
 
+	reviewers := make([]int64, 0)
 	for getReviewers.Next() {
 		var reviewerID int64
 		err := getReviewers.Scan(&reviewerID)
@@ -78,7 +79,11 @@ func (s *Storage) AssignReviewers(
 			return fmt.Errorf("%s: %w", op, err)
 		}
 
-		// Назначаем ревьювера
+		reviewers = append(reviewers, reviewerID)
+	}
+
+	for _, reviewerID := range reviewers {
+		// Назначаем ревьюверов
 		_, err = conn.Exec(
 			ctx,
 			`
