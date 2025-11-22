@@ -30,7 +30,7 @@ func (s *serverAPI) PostPullRequestCreate(
 		response.Error.Message = err.Error()
 		return response, nil
 	} else if errors.Is(err, prassignment.ErrPRExists) {
-		response := api.PostPullRequestCreate404JSONResponse{}
+		response := api.PostPullRequestCreate409JSONResponse{}
 		response.Error.Code = api.PREXISTS
 		response.Error.Message = err.Error()
 		return response, nil
