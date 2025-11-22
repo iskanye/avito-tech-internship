@@ -2,6 +2,7 @@ package tests
 
 import (
 	"testing"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/iskanye/avito-tech-internship/pkg/api"
@@ -19,6 +20,8 @@ const (
 	NOT_ASSIGNED = "reviewer is not assigned to this PR"
 	NO_CANDIDATE = "no active replacement candidate in team"
 )
+
+// Тесты команд
 
 func TestTeams_AddGetTeam_Success(t *testing.T) {
 	s, ctx := suite.New(t)
@@ -70,6 +73,8 @@ func TestTeams_GetTeam_NotFound(t *testing.T) {
 	assert.Equal(t, api.NOTFOUND, resp.JSON404.Error.Code)
 	assert.Equal(t, NOT_FOUND, resp.JSON404.Error.Message)
 }
+
+// Тесты пользователей
 
 func TestUsers_SetIsActive_Success(t *testing.T) {
 	s, ctx := suite.New(t)
@@ -129,14 +134,22 @@ func TestUsers_GetReview_Success(t *testing.T) {
 	// Cоздаем два пул реквеста с одним автором
 	pr1 := suite.RandomPullRequest(team.Members[0].UserId)
 
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pr1)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pr1.PullRequestId,
+		PullRequestName: pr1.PullRequestName,
+		AuthorId:        pr1.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pr1, addPullRequest.JSON201.Pr)
 
 	pr2 := suite.RandomPullRequest(team.Members[0].UserId)
 
-	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pr2)
+	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pr2.PullRequestId,
+		PullRequestName: pr2.PullRequestName,
+		AuthorId:        pr2.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pr2, addPullRequest.JSON201.Pr)
@@ -167,7 +180,9 @@ func TestUsers_GetReview_NotFound(t *testing.T) {
 	assert.Equal(t, NOT_FOUND, getReview.JSON404.Error.Message)
 }
 
-func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
+// Тесты пул реквестов
+
+func TestPullRequests_Create_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	team := suite.RandomTeam(membersCount, gofakeit.Bool)
@@ -181,13 +196,17 @@ func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 }
 
-func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
+func TestPullRequests_Create_Dublicate(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	team := suite.RandomTeam(membersCount, gofakeit.Bool)
@@ -201,30 +220,100 @@ func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 
 	// Вставляем дубликат
-	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err = s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON409)
 	assert.Equal(t, api.PREXISTS, addPullRequest.JSON409.Error.Code)
 	assert.Equal(t, PR_EXISTS, addPullRequest.JSON409.Error.Message)
 }
 
-func TestPullRequests_CreatePullRequest_NotFound(t *testing.T) {
+func TestPullRequests_Create_NotFound(t *testing.T) {
 	s, ctx := suite.New(t)
 
 	pullRequest := suite.RandomPullRequest(gofakeit.UUID())
 
 	// Добавляем пул реквест с несуществующим автором
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON404)
 	assert.Equal(t, api.NOTFOUND, addPullRequest.JSON404.Error.Code)
 	assert.Equal(t, NOT_FOUND, addPullRequest.JSON404.Error.Message)
+}
+
+func TestPullRequests_Merge_Success(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
+
+	// Добавить команду
+	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeam.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeam.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+
+	// Мерджим наш пул реквест
+	pullRequest.Status = api.PullRequestStatusMERGED
+	mergedAt := time.Now().Truncate(1)
+	pullRequest.MergedAt = &mergedAt
+
+	// Мерджим пул реквест в сервисе
+	mergedPullRequest, err := s.Client.PostPullRequestMergeWithResponse(ctx, api.PostPullRequestMergeJSONRequestBody{
+		PullRequestId: pullRequest.PullRequestId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, mergedPullRequest.JSON200)
+	suite.CheckPullRequestEqual(t, pullRequest, mergedPullRequest.JSON200.Pr)
+
+	// Проверяем идемпотентность
+	mergedPullRequest, err = s.Client.PostPullRequestMergeWithResponse(ctx, api.PostPullRequestMergeJSONRequestBody{
+		PullRequestId: pullRequest.PullRequestId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, mergedPullRequest.JSON200)
+	suite.CheckPullRequestEqual(t, pullRequest, mergedPullRequest.JSON200.Pr)
+}
+
+func TestPullRequests_Merge_NotFound(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	// Мерджим пул реквест
+	mergedPullRequest, err := s.Client.PostPullRequestMergeWithResponse(ctx, api.PostPullRequestMergeJSONRequestBody{
+		PullRequestId: gofakeit.UUID(),
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, mergedPullRequest.JSON404)
+	assert.Equal(t, api.NOTFOUND, mergedPullRequest.JSON404.Error.Code)
+	assert.Equal(t, NOT_FOUND, mergedPullRequest.JSON404.Error.Message)
 }
 
 func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
@@ -242,7 +331,11 @@ func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
@@ -307,7 +400,11 @@ func TestPullRequests_ReassignReviewer_NonExistingUser(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
@@ -341,7 +438,11 @@ func TestPullRequests_ReassignReviewer_NotAssigned(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
@@ -389,7 +490,11 @@ func TestPullRequests_ReassignReviewer_NoCandidate(t *testing.T) {
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
 	// Добавляем пул реквест
-	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON201)
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)

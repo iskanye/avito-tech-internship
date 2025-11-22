@@ -15,25 +15,34 @@ const (
 	timeDelta = 1
 )
 
-func RandomPullRequest(authorID string) *api.PostPullRequestCreateJSONRequestBody {
-	return &api.PostPullRequestCreateJSONRequestBody{
+func RandomPullRequest(authorID string) *api.PullRequest {
+	now := time.Now().Truncate(1)
+	return &api.PullRequest{
 		PullRequestId:   gofakeit.UUID(),
 		PullRequestName: gofakeit.Sentence(3),
 		AuthorId:        authorID,
+		Status:          api.PullRequestStatusOPEN,
+		CreatedAt:       &now,
 	}
 }
 
 func CheckPullRequestEqual(
 	t *testing.T,
-	pr1 *api.PostPullRequestCreateJSONRequestBody,
+	pr1 *api.PullRequest,
 	pr2 *api.PullRequest,
 ) {
 	assert.Equal(t, pr1.PullRequestId, pr2.PullRequestId)
 	assert.Equal(t, pr1.PullRequestName, pr2.PullRequestName)
 	assert.Equal(t, pr1.AuthorId, pr2.AuthorId)
-	assert.Equal(t, string(api.PullRequestStatusOPEN), string(pr2.Status))
+	assert.Equal(t, pr1.Status, pr2.Status)
 
-	assert.InDelta(t, time.Now().Unix(), pr2.CreatedAt.Unix(), timeDelta)
+	assert.InDelta(t, pr1.CreatedAt.Unix(), pr2.CreatedAt.Unix(), timeDelta)
+
+	if pr1.MergedAt != nil && pr2.MergedAt != nil {
+		assert.InDelta(t, pr1.MergedAt.Unix(), pr2.MergedAt.Unix(), timeDelta)
+	} else {
+		assert.Equal(t, pr1.MergedAt, pr2.MergedAt)
+	}
 }
 
 func CheckPullRequestsEqual(
@@ -57,7 +66,7 @@ func CheckPullRequestsEqual(
 }
 
 func PullRequestCreateToModel(
-	pr *api.PostPullRequestCreateJSONRequestBody,
+	pr *api.PullRequest,
 ) models.PullRequest {
 	return models.PullRequest{
 		ID:       pr.PullRequestId,
