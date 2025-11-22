@@ -28,8 +28,9 @@ func (s *Storage) AssignReviewers(
 	getID := s.pool.QueryRow(
 		ctx,
 		`
-		SELECT p.id FROM pull_requests p
-		JOIN pull_requests_id i ON i.id = p.id
+		SELECT p.id 
+		FROM pull_requests p
+		JOIN pull_requests_id i ON p.pull_request_id = i.id
 		WHERE i.pull_request_id = $1;
 		`,
 		pullRequestID,
@@ -38,9 +39,8 @@ func (s *Storage) AssignReviewers(
 	var prID int64
 	err = getID.Scan(&prID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
-		}
+		// Ловить ErrNotFound нет смысла так как
+		// PR должен быть создан
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
