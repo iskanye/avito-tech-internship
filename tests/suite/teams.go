@@ -27,7 +27,7 @@ func RandomTeam(membersCount int, isActive func() bool) *api.Team {
 	return team
 }
 
-func RequireTeamsEqual(t *testing.T, team1 *api.Team, team2 *api.Team) {
+func CheckTeamsEqual(t *testing.T, team1 *api.Team, team2 *api.Team) {
 	require.Equal(t, team1.TeamName, team2.TeamName)
 
 	membersSet := make(map[string]teamMember)

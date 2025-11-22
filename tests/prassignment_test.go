@@ -27,7 +27,7 @@ func TestTeams_AddGetTeam_Success(t *testing.T) {
 	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, addTeamResp.JSON201)
-	suite.RequireTeamsEqual(t, team, addTeamResp.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
 
 	// Получить команду
 	getTeamResp, err := s.Client.GetTeamGetWithResponse(ctx, &api.GetTeamGetParams{
@@ -35,7 +35,7 @@ func TestTeams_AddGetTeam_Success(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, getTeamResp.JSON200)
-	suite.RequireTeamsEqual(t, team, getTeamResp.JSON200)
+	suite.CheckTeamsEqual(t, team, getTeamResp.JSON200)
 }
 
 func TestTeams_AddTeam_Dublicate(t *testing.T) {
@@ -47,7 +47,7 @@ func TestTeams_AddTeam_Dublicate(t *testing.T) {
 	resp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.JSON201)
-	suite.RequireTeamsEqual(t, team, resp.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, resp.JSON201.Team)
 
 	resp, err = s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
@@ -78,7 +78,7 @@ func TestUsers_SetIsActive_Success(t *testing.T) {
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, addTeam.JSON201)
-	suite.RequireTeamsEqual(t, team, addTeam.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, addTeam.JSON201.Team)
 
 	// Изменяем состояние активности одного пользователя
 	setIsActiveReq := api.PostUsersSetIsActiveJSONRequestBody{
@@ -122,7 +122,7 @@ func TestUsers_GetReview_Success(t *testing.T) {
 	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, addTeamResp.JSON201)
-	suite.RequireTeamsEqual(t, team, addTeamResp.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
 
 	// Cоздаем два пул реквеста с одним автором
 	pr1 := suite.RandomPullRequest(team.Members[0].UserId)
@@ -161,7 +161,7 @@ func TestPullRequests_CreatePullRequest_Success(t *testing.T) {
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, addTeam.JSON201)
-	suite.RequireTeamsEqual(t, team, addTeam.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, addTeam.JSON201.Team)
 
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
@@ -181,7 +181,7 @@ func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
 	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
 	require.NoError(t, err)
 	require.NotEmpty(t, addTeam.JSON201)
-	suite.RequireTeamsEqual(t, team, addTeam.JSON201.Team)
+	suite.CheckTeamsEqual(t, team, addTeam.JSON201.Team)
 
 	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
 
