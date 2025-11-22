@@ -156,8 +156,18 @@ func TestPullRequests_CreatePullRequest_Dublicate(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, addPullRequest.JSON409)
 	assert.Equal(t, api.PREXISTS, addPullRequest.JSON409.Error.Code)
-	assert.Equal(t, api.PREXISTS, addPullRequest.JSON409.Error.Message)
+	assert.Equal(t, PR_EXISTS, addPullRequest.JSON409.Error.Message)
 }
 
 func TestPullRequests_CreatePullRequest_NotFound(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	pullRequest := suite.RandomPullRequest(gofakeit.UUID())
+
+	// Добавляем пул реквест с несуществующим автором
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, *pullRequest)
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON404)
+	assert.Equal(t, api.NOTFOUND, addPullRequest.JSON404.Error.Code)
+	assert.Equal(t, NOT_FOUND, addPullRequest.JSON404.Error.Message)
 }
