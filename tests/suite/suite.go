@@ -29,7 +29,7 @@ func New(t *testing.T) (*Suite, context.Context) {
 
 	hc := http.Client{}
 	c, err := api.NewClientWithResponses(
-		fmt.Sprintf("http://localhost:%d/", cfg.Port),
+		fmt.Sprintf("http://%s:%d/", cfg.Host, cfg.Port),
 		api.WithHTTPClient(&hc),
 	)
 	require.NoError(t, err)

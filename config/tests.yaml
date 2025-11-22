@@ -3,5 +3,4 @@ port: 8080
 postgres:
   host: "postgres"
   port: 5432
-  db_name: "tests"
   max_conns: 10

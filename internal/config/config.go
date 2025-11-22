@@ -11,7 +11,7 @@ type Config struct {
 	Host     string         `yaml:"host" env-default:"localhost"`
 	Port     int            `yaml:"port"`
 	Postgres PostgresConfig `yaml:"postgres"`
-	Timeout  int            `yaml:"timeout"` // В миллисекундах
+	Timeout  int            `yaml:"timeout" env-default:"300"` // В миллисекундах
 }
 
 type PostgresConfig struct {

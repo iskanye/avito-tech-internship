@@ -1,7 +1,10 @@
 services:
   db:
     image: postgres:latest
-    env_file: ".env"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     container_name: postgres
@@ -11,19 +14,21 @@ services:
       timeout: 10s
       retries: 5
     volumes:
-      - pr-assignment:/var/lib/postgresql/
+      - pr-assignment-tests:/var/lib/postgresql/
 
   pr-assignment:
     build:
-      dockerfile:  Dockerfile
+      dockerfile: Dockerfile.tests
       context: ./
-    env_file: ".env"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      CONFIG_PATH: ./config/tests.yaml
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - 8080:8080
     container_name: pr-assignment
 
 volumes:
-  pr-assignment:
+  pr-assignment-tests:

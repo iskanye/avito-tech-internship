@@ -2,49 +2,16 @@ name: 'Tests'
 
 on: ["push"]
 
-
-
 jobs:
   tests:
     name: 'Run tests'
     runs-on: ubuntu-latest
-    env:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
-      CONFIG_PATH: ./config/tests.yaml
-
-    services:
-      db:
-        image: postgres:latest
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: './go.mod'
+      - name: Build the stack
+        run: docker compose -f docker-compose.test.yml up -d --build
 
-      - name: Install dependencies
-        run: go mod download
-
-      - name: Apply migrations
-        run: go run ./cmd/migrator --migrations-path=./migrations
-
-      - name: Run service
-        run: nohup go run ./cmd/prassignment &
-        
-      - name: Wait for service
-        run: sleep 10
-        
       - name: Run tests
-        env:          
-          CONFIG_PATH: ../config/tests.yaml
-        run: go test -v ./tests
+        run: docker exec pr-assignment ./tests
