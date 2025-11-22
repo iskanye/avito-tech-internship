@@ -107,7 +107,7 @@ func (s *Storage) GetPullRequest(
 		SELECT i.user_id 
 		FROM users u
 		JOIN users_id i ON u.user_id = i.id
-		WHERE i.id = $1;
+		WHERE u.id = $1;
 		`,
 		author,
 	)
