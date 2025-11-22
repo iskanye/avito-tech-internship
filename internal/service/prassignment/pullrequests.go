@@ -50,19 +50,29 @@ func (a *PRAssignment) CreatePullRequest(
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Получаем пул реквест
-	pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
+	// Назначаем ревьюверов
+	err = a.revAssigner.AssignReviewers(ctx, pullRequest.ID, pullRequest.AuthorID)
 	if err != nil {
-		// Проверять на ErrNotFound нет смысла
-		log.Error("Failed to get PR",
+		log.Error("Failed to assign reviewer",
 			slog.String("err", err.Error()),
 		)
+
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	// Сохраняем изменения
 	if err = a.txManager.Commit(ctx); err != nil {
 		log.Error("Failed to commit transaction",
+			slog.String("err", err.Error()),
+		)
+		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем пул реквест
+	pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequest.ID)
+	if err != nil {
+		// Проверять на ErrNotFound нет смысла
+		log.Error("Failed to get PR",
 			slog.String("err", err.Error()),
 		)
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
@@ -110,19 +120,19 @@ func (a *PRAssignment) MergePullRequest(
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Получаем пул реквест
-	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
-	if err != nil {
-		// Проверять на ErrNotFound нет смысла
-		log.Error("Failed to get PR",
+	// Сохраняем изменения
+	if err = a.txManager.Commit(ctx); err != nil {
+		log.Error("Failed to commit transaction",
 			slog.String("err", err.Error()),
 		)
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Сохраняем изменения
-	if err = a.txManager.Commit(ctx); err != nil {
-		log.Error("Failed to commit transaction",
+	// Получаем пул реквест
+	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
+	if err != nil {
+		// Проверять на ErrNotFound нет смысла
+		log.Error("Failed to get PR",
 			slog.String("err", err.Error()),
 		)
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
@@ -148,16 +158,6 @@ func (a *PRAssignment) ReassignPullRequest(
 
 	log.Info("Attempting to reassign PR reviewer")
 
-	// Начинаем транзакцию
-	err := a.txManager.Begin(ctx)
-	if err != nil {
-		log.Error("Failed to start transaction",
-			slog.String("err", err.Error()),
-		)
-		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
-	}
-	defer a.txManager.Rollback(ctx)
-
 	// Получаем пул реквест
 	pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
 	if err != nil {
@@ -177,6 +177,16 @@ func (a *PRAssignment) ReassignPullRequest(
 
 		return models.PullRequest{}, "", ErrPRMerged
 	}
+
+	// Начинаем транзакцию
+	err = a.txManager.Begin(ctx)
+	if err != nil {
+		log.Error("Failed to start transaction",
+			slog.String("err", err.Error()),
+		)
+		return models.PullRequest{}, "", fmt.Errorf("%s: %w", op, err)
+	}
+	defer a.txManager.Rollback(ctx)
 
 	// Переназначаем ревьювера
 	newReviewerID, err := a.revModifier.ReassignReviewer(ctx, pullRequestID, oldReviewerID)
