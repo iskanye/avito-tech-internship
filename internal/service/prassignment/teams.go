@@ -8,6 +8,7 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
+	"golang.org/x/sync/errgroup"
 )
 
 // Создаёт команду и создаёт/обновляет её пользователей
@@ -136,6 +137,76 @@ func (a *PRAssignment) DeactivateTeam(
 	log.Info("Successfully deactivated team")
 
 	return team, nil
+}
+
+func (a *PRAssignment) ReassignTeam(
+	ctx context.Context,
+	teamName string,
+) error {
+	const op = "service.PRAssignment.ReassignTeam"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("team_name", teamName),
+	)
+
+	log.Info("Attempting to reassign inactive team members")
+
+	// Получаем команду
+	team, err := a.teamProvider.GetTeam(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to get team",
+			slog.String("err", err.Error()),
+		)
+
+		if errors.Is(err, repositories.ErrNotFound) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	for _, member := range team.Members {
+		if !member.IsActive {
+			// Начинаем транзакцию
+			err = a.txManager.Do(ctx, func(ctx context.Context) error {
+				pullRequests, err := a.GetReview(ctx, member.UserID)
+				if err != nil {
+					return err
+				}
+
+				// Пытаемся переназначить
+				errGroup, errCtx := errgroup.WithContext(ctx)
+				for _, pr := range pullRequests {
+					errGroup.Go(func() error {
+						// Начинаем подтранзакци
+						return a.txManager.Do(errCtx, func(ctx context.Context) error {
+							_, err = a.revModifier.ReassignReviewer(ctx, pr.ID, member.UserID)
+							if err != nil {
+								return err
+							}
+
+							return nil
+						})
+					})
+				}
+
+				err = errGroup.Wait()
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})
+			if err != nil {
+				log.Error("Failed to reassign inactive team members",
+					slog.String("err", err.Error()),
+				)
+
+				return fmt.Errorf("%s: %w", op, err)
+			}
+		}
+	}
+	return nil
 }
 
 // Получает статистику команды
