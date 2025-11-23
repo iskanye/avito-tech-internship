@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,13 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/iskanye/avito-tech-internship/internal/app"
 	"github.com/iskanye/avito-tech-internship/internal/config"
+	"github.com/iskanye/avito-tech-internship/pkg/logger"
 )
 
 func main() {
 	cfg := config.MustLoad()
 	cfg.LoadEnv()
 
-	app := app.New(gin.Default(), slog.Default(), cfg)
+	e := gin.New()
+	e.Use(gin.Recovery())
+
+	log := logger.SetupPrettySlog()
+
+	app := app.New(e, log, cfg)
 
 	go func() {
 		app.MustRun()
