@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -11,7 +12,7 @@ type Config struct {
 	Host     string         `yaml:"host" env-default:"localhost"`
 	Port     int            `yaml:"port"`
 	Postgres PostgresConfig `yaml:"postgres"`
-	Timeout  int            `yaml:"timeout" env-default:"300"` // В миллисекундах
+	Timeout  time.Duration  `yaml:"timeout" env-default:"300ms"`
 }
 
 type PostgresConfig struct {

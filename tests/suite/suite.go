@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/iskanye/avito-tech-internship/internal/config"
 	"github.com/iskanye/avito-tech-internship/pkg/api"
@@ -26,7 +25,7 @@ func New(t *testing.T) (*Suite, context.Context) {
 
 	сtx, cancel := context.WithTimeout(
 		context.Background(),
-		time.Duration(cfg.Timeout)*time.Millisecond,
+		cfg.Timeout,
 	)
 
 	t.Cleanup(func() {
