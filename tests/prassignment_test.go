@@ -74,6 +74,32 @@ func TestTeams_GetTeam_NotFound(t *testing.T) {
 	assert.Equal(t, NOT_FOUND, resp.JSON404.Error.Message)
 }
 
+func TestTeams_DeactivateTeam_Success(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	team := suite.RandomTeam(membersCount, gofakeit.Bool)
+
+	// Добавить команду
+	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeamResp.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeamResp.JSON201.Team)
+
+	// Деактивировать команду
+	getTeamResp, err := s.Client.PostTeamDeactivateWithResponse(ctx, api.PostTeamDeactivateJSONRequestBody{
+		TeamName: team.TeamName,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, getTeamResp.JSON200)
+
+	// Деактивируем нашу команду
+	for i := range team.Members {
+		team.Members[i].IsActive = false
+	}
+
+	suite.CheckTeamsEqual(t, team, getTeamResp.JSON200)
+}
+
 // Тесты пользователей
 
 func TestUsers_SetIsActive_Success(t *testing.T) {
