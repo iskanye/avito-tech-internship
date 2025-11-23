@@ -8,6 +8,7 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/iskanye/avito-tech-internship/internal/repositories"
+	"golang.org/x/sync/errgroup"
 )
 
 // Создаёт команду и создаёт/обновляет её пользователей
@@ -136,6 +137,86 @@ func (a *PRAssignment) DeactivateTeam(
 	log.Info("Successfully deactivated team")
 
 	return team, nil
+}
+
+func (a *PRAssignment) ReassignTeam(
+	ctx context.Context,
+	teamName string,
+) ([]string, error) {
+	const op = "service.PRAssignment.ReassignTeam"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("team_name", teamName),
+	)
+
+	log.Info("Attempting to reassign inactive team members")
+
+	// Получаем команду
+	team, err := a.teamProvider.GetTeam(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to get team",
+			slog.String("err", err.Error()),
+		)
+
+		if errors.Is(err, repositories.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Проходимся по каждом члену команды и если он неактивный, то переназначаем
+	// его во всех пул реквестах где он ревьювер
+	replacedBy := make([]string, 0)
+	for _, member := range team.Members {
+		if !member.IsActive {
+			pullRequests, err := a.GetReview(ctx, member.UserID)
+			if err != nil {
+				log.Error("Failed to get pull requests",
+					slog.String("err", err.Error()),
+				)
+
+				return nil, fmt.Errorf("%s: %w", op, err)
+			}
+
+			// Пытаемся переназначить
+			errGroup, errCtx := errgroup.WithContext(ctx)
+			for _, pr := range pullRequests {
+				if pr.Status == models.PULLREQUEST_OPEN {
+					errGroup.Go(func() error {
+						// Начинаем транзакцию
+						return a.txManager.Do(errCtx, func(ctx context.Context) error {
+							newReviewer, err := a.revModifier.ReassignReviewer(ctx, pr.ID, member.UserID)
+							// Если не найден подходящий кандидат на замену то ничего не делаем
+							if errors.Is(err, repositories.ErrNoCandidates) {
+								return nil
+							}
+							if err != nil {
+								return err
+							}
+
+							replacedBy = append(replacedBy, newReviewer)
+							return nil
+						})
+					})
+				}
+			}
+
+			// Ждем завершения всех переназначений
+			err = errGroup.Wait()
+			if err != nil {
+				log.Error("Failed to reassign inactive team members",
+					slog.String("err", err.Error()),
+				)
+
+				return nil, fmt.Errorf("%s: %w", op, err)
+			}
+		}
+	}
+
+	log.Info("Reassigned successfully")
+
+	return replacedBy, nil
 }
 
 // Получает статистику команды

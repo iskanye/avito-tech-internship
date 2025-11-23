@@ -84,6 +84,28 @@ func (s *serverAPI) PostTeamDeactivate(
 	return response, nil
 }
 
+// (POST /team/reassign)
+func (s *serverAPI) PostTeamReassign(
+	c context.Context,
+	req api.PostTeamReassignRequestObject,
+) (api.PostTeamReassignResponseObject, error) {
+	replacedBy, err := s.assign.ReassignTeam(c, req.Body.TeamName)
+	if errors.Is(err, prassignment.ErrNotFound) {
+		response := api.PostTeamReassign404JSONResponse{}
+		response.Error.Code = api.NOTFOUND
+		response.Error.Message = err.Error()
+		return response, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.PostTeamReassign200JSONResponse{
+		ReplacedBy: replacedBy,
+	}
+	return response, nil
+}
+
 // (GET /team/stats)
 func (s *serverAPI) GetTeamStats(
 	c context.Context,
