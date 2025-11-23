@@ -95,3 +95,47 @@ func (a *PRAssignment) GetTeam(
 
 	return team, nil
 }
+
+// Получает статистику команды
+func (a *PRAssignment) TeamStats(
+	ctx context.Context,
+	teamName string,
+) (models.TeamStats, error) {
+	const op = "service.PRAssignment.TeamStats"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("team_name", teamName),
+	)
+
+	log.Info("Attempting to get team stats")
+	stats := models.TeamStats{
+		TeamName: teamName,
+	}
+
+	// Получаем команду
+	team, err := a.teamProvider.GetTeam(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to get team",
+			slog.String("err", err.Error()),
+		)
+
+		if errors.Is(err, repositories.ErrNotFound) {
+			return models.TeamStats{}, ErrNotFound
+		}
+		return models.TeamStats{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем статистику пользователей
+	for _, user := range team.Members {
+		stats.Users++
+
+		if user.IsActive {
+			stats.ActiveUsers++
+		} else {
+			stats.InactiveUsers++
+		}
+	}
+
+	return stats, nil
+}

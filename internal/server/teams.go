@@ -63,6 +63,13 @@ func (s *serverAPI) GetTeamGet(
 	return response, nil
 }
 
+func (s *serverAPI) GetTeamStats(
+	c context.Context,
+	req api.GetTeamStatsRequestObject,
+) (api.GetTeamStatsResponseObject, error) {
+	return nil, nil
+}
+
 func convertTeamToApi(team *models.Team) *api.Team {
 	teamRes := api.Team{
 		TeamName: team.TeamName,
