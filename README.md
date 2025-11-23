@@ -57,4 +57,4 @@ task tests
 * [cleanenv](https://github.com/ilyakaznacheev/cleanenv) - библиотека для чтения файлов конфигурации
 * [migrate](https://github.com/golang-migrate/migrate) - программа и библиотека для управления миграциями БД
 * [testify](https://github.com/stretchr/testify) - библиотека для написания тестов
-* [gofakeit](https://github.com/brianvoe/gofakeit) - библиотека для генерации случайной информации, как в форме чисес, так и в форме текста (случайные ID, слова, предложения)
+* [gofakeit](https://github.com/brianvoe/gofakeit) - библиотека для генерации случайной информации, как в форме чисел, так и в форме текста (случайные ID, слова, предложения)
