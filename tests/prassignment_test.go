@@ -206,6 +206,31 @@ func TestPullRequests_Create_Success(t *testing.T) {
 	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
 }
 
+func TestPullRequests_Create_NoReviewers(t *testing.T) {
+	s, ctx := suite.New(t)
+
+	team := suite.RandomTeam(1, func() bool { return true })
+
+	// Добавить команду
+	addTeam, err := s.Client.PostTeamAddWithResponse(ctx, *team)
+	require.NoError(t, err)
+	require.NotEmpty(t, addTeam.JSON201)
+	suite.CheckTeamsEqual(t, team, addTeam.JSON201.Team)
+
+	pullRequest := suite.RandomPullRequest(team.Members[0].UserId)
+
+	// Добавляем пул реквест
+	addPullRequest, err := s.Client.PostPullRequestCreateWithResponse(ctx, api.PostPullRequestCreateJSONRequestBody{
+		PullRequestId:   pullRequest.PullRequestId,
+		PullRequestName: pullRequest.PullRequestName,
+		AuthorId:        pullRequest.AuthorId,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, addPullRequest.JSON201)
+	suite.CheckPullRequestEqual(t, pullRequest, addPullRequest.JSON201.Pr)
+	assert.Empty(t, addPullRequest.JSON201.Pr.AssignedReviewers)
+}
+
 func TestPullRequests_Create_Dublicate(t *testing.T) {
 	s, ctx := suite.New(t)
 
