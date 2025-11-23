@@ -640,7 +640,7 @@ func NewGetTeamStatsRequest(server string, params *GetTeamStatsParams) (*http.Re
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/team/stats/")
+	operationPath := fmt.Sprintf("/team/stats")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1481,7 +1481,7 @@ type ServerInterface interface {
 	// (GET /team/get)
 	GetTeamGet(c *gin.Context, params GetTeamGetParams)
 	// Получить статистику по команде
-	// (GET /team/stats/)
+	// (GET /team/stats)
 	GetTeamStats(c *gin.Context, params GetTeamStatsParams)
 	// Получить PR'ы, где пользователь назначен ревьювером
 	// (GET /users/getReview)
@@ -1696,7 +1696,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/pullRequest/reassign", wrapper.PostPullRequestReassign)
 	router.POST(options.BaseURL+"/team/add", wrapper.PostTeamAdd)
 	router.GET(options.BaseURL+"/team/get", wrapper.GetTeamGet)
-	router.GET(options.BaseURL+"/team/stats/", wrapper.GetTeamStats)
+	router.GET(options.BaseURL+"/team/stats", wrapper.GetTeamStats)
 	router.GET(options.BaseURL+"/users/getReview", wrapper.GetUsersGetReview)
 	router.POST(options.BaseURL+"/users/setIsActive", wrapper.PostUsersSetIsActive)
 }
@@ -1969,7 +1969,7 @@ type StrictServerInterface interface {
 	// (GET /team/get)
 	GetTeamGet(ctx context.Context, request GetTeamGetRequestObject) (GetTeamGetResponseObject, error)
 	// Получить статистику по команде
-	// (GET /team/stats/)
+	// (GET /team/stats)
 	GetTeamStats(ctx context.Context, request GetTeamStatsRequestObject) (GetTeamStatsResponseObject, error)
 	// Получить PR'ы, где пользователь назначен ревьювером
 	// (GET /users/getReview)

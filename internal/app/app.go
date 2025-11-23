@@ -60,6 +60,8 @@ func New(
 }
 
 func (a App) MustRun() {
+	a.log.Info("Service started")
+
 	if err := a.e.Run(address(a.cfg.Host, a.cfg.Port)); err != nil {
 		panic(err)
 	}
