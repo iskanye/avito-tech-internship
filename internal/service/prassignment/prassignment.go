@@ -22,6 +22,7 @@ type PRAssignment struct {
 	// Объекты для взаимодействия с командами
 	teamCreator    TeamCreator
 	teamProvider   TeamProvider
+	teamModifier   TeamModifier
 	teamStatistics TeamStatistics
 
 	// Объекты для взаимодействия с пул реквестами
@@ -78,6 +79,13 @@ type TeamProvider interface {
 		ctx context.Context,
 		teamName string,
 	) (models.Team, error)
+}
+
+type TeamModifier interface {
+	DeactivateTeam(
+		ctx context.Context,
+		teamName string,
+	) error
 }
 
 type TeamStatistics interface {
@@ -144,6 +152,7 @@ func New(
 
 	teamCreator TeamCreator,
 	teamProvider TeamProvider,
+	teamModifier TeamModifier,
 	teamStatistics TeamStatistics,
 
 	prCreator PRCreator,
@@ -163,6 +172,7 @@ func New(
 
 		teamCreator:    teamCreator,
 		teamProvider:   teamProvider,
+		teamModifier:   teamModifier,
 		teamStatistics: teamStatistics,
 
 		prCreator:  prCreator,

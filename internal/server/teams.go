@@ -63,6 +63,28 @@ func (s *serverAPI) GetTeamGet(
 	return response, nil
 }
 
+// (POST /team/deactivate)
+func (s *serverAPI) PostTeamDeactivate(
+	c context.Context,
+	req api.PostTeamDeactivateRequestObject,
+) (api.PostTeamDeactivateResponseObject, error) {
+	team, err := s.assign.DeactivateTeam(c, req.Body.TeamName)
+	if errors.Is(err, prassignment.ErrNotFound) {
+		response := api.PostTeamDeactivate404JSONResponse{}
+		response.Error.Code = api.NOTFOUND
+		response.Error.Message = err.Error()
+		return response, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	teamResp := convertTeamToApi(&team)
+	response := (api.PostTeamDeactivate200JSONResponse)(*teamResp)
+	return response, nil
+}
+
+// (GET /team/stats)
 func (s *serverAPI) GetTeamStats(
 	c context.Context,
 	req api.GetTeamStatsRequestObject,

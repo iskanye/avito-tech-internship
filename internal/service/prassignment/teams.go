@@ -96,6 +96,48 @@ func (a *PRAssignment) GetTeam(
 	return team, nil
 }
 
+// Деактивирует пользователей команды
+func (a *PRAssignment) DeactivateTeam(
+	ctx context.Context,
+	teamName string,
+) (models.Team, error) {
+	const op = "service.PRAssignment.DeactivateTeam"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("team_name", teamName),
+	)
+
+	log.Info("Attempting to deactivate team")
+
+	// Деактивируем команду
+	err := a.teamModifier.DeactivateTeam(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to deactivate team",
+			slog.String("err", err.Error()),
+		)
+
+		if errors.Is(err, repositories.ErrNotFound) {
+			return models.Team{}, ErrNotFound
+		}
+		return models.Team{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем команду
+	team, err := a.teamProvider.GetTeam(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to get team",
+			slog.String("err", err.Error()),
+		)
+
+		return models.Team{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("Successfully deactivated team")
+
+	return team, nil
+}
+
 // Получает статистику команды
 func (a *PRAssignment) TeamStats(
 	ctx context.Context,

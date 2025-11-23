@@ -123,6 +123,11 @@ type PostPullRequestReassignJSONBody struct {
 	PullRequestId string `json:"pull_request_id"`
 }
 
+// PostTeamDeactivateJSONBody defines parameters for PostTeamDeactivate.
+type PostTeamDeactivateJSONBody struct {
+	TeamName string `json:"team_name"`
+}
+
 // GetTeamGetParams defines parameters for GetTeamGet.
 type GetTeamGetParams struct {
 	// TeamName Уникальное имя команды
@@ -158,6 +163,9 @@ type PostPullRequestReassignJSONRequestBody PostPullRequestReassignJSONBody
 
 // PostTeamAddJSONRequestBody defines body for PostTeamAdd for application/json ContentType.
 type PostTeamAddJSONRequestBody = Team
+
+// PostTeamDeactivateJSONRequestBody defines body for PostTeamDeactivate for application/json ContentType.
+type PostTeamDeactivateJSONRequestBody PostTeamDeactivateJSONBody
 
 // PostUsersSetIsActiveJSONRequestBody defines body for PostUsersSetIsActive for application/json ContentType.
 type PostUsersSetIsActiveJSONRequestBody PostUsersSetIsActiveJSONBody
@@ -254,6 +262,11 @@ type ClientInterface interface {
 	PostTeamAddWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	PostTeamAdd(ctx context.Context, body PostTeamAddJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostTeamDeactivateWithBody request with any body
+	PostTeamDeactivateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostTeamDeactivate(ctx context.Context, body PostTeamDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTeamGet request
 	GetTeamGet(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -356,6 +369,30 @@ func (c *Client) PostTeamAddWithBody(ctx context.Context, contentType string, bo
 
 func (c *Client) PostTeamAdd(ctx context.Context, body PostTeamAddJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostTeamAddRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostTeamDeactivateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostTeamDeactivateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostTeamDeactivate(ctx context.Context, body PostTeamDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostTeamDeactivateRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -567,6 +604,46 @@ func NewPostTeamAddRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	operationPath := fmt.Sprintf("/team/add")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostTeamDeactivateRequest calls the generic PostTeamDeactivate builder with application/json body
+func NewPostTeamDeactivateRequest(server string, body PostTeamDeactivateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostTeamDeactivateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostTeamDeactivateRequestWithBody generates requests for PostTeamDeactivate with any type of body
+func NewPostTeamDeactivateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/team/deactivate")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -824,6 +901,11 @@ type ClientWithResponsesInterface interface {
 
 	PostTeamAddWithResponse(ctx context.Context, body PostTeamAddJSONRequestBody, reqEditors ...RequestEditorFn) (*PostTeamAddResponse, error)
 
+	// PostTeamDeactivateWithBodyWithResponse request with any body
+	PostTeamDeactivateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostTeamDeactivateResponse, error)
+
+	PostTeamDeactivateWithResponse(ctx context.Context, body PostTeamDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostTeamDeactivateResponse, error)
+
 	// GetTeamGetWithResponse request
 	GetTeamGetWithResponse(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*GetTeamGetResponse, error)
 
@@ -938,6 +1020,29 @@ func (r PostTeamAddResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostTeamAddResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostTeamDeactivateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Team
+	JSON404      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostTeamDeactivateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostTeamDeactivateResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1115,6 +1220,23 @@ func (c *ClientWithResponses) PostTeamAddWithResponse(ctx context.Context, body 
 		return nil, err
 	}
 	return ParsePostTeamAddResponse(rsp)
+}
+
+// PostTeamDeactivateWithBodyWithResponse request with arbitrary body returning *PostTeamDeactivateResponse
+func (c *ClientWithResponses) PostTeamDeactivateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostTeamDeactivateResponse, error) {
+	rsp, err := c.PostTeamDeactivateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostTeamDeactivateResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostTeamDeactivateWithResponse(ctx context.Context, body PostTeamDeactivateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostTeamDeactivateResponse, error) {
+	rsp, err := c.PostTeamDeactivate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostTeamDeactivateResponse(rsp)
 }
 
 // GetTeamGetWithResponse request returning *GetTeamGetResponse
@@ -1318,6 +1440,39 @@ func ParsePostTeamAddResponse(rsp *http.Response) (*PostTeamAddResponse, error) 
 	return response, nil
 }
 
+// ParsePostTeamDeactivateResponse parses an HTTP response from a PostTeamDeactivateWithResponse call
+func ParsePostTeamDeactivateResponse(rsp *http.Response) (*PostTeamDeactivateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostTeamDeactivateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Team
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetTeamGetResponse parses an HTTP response from a GetTeamGetWithResponse call
 func ParseGetTeamGetResponse(rsp *http.Response) (*GetTeamGetResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1477,6 +1632,9 @@ type ServerInterface interface {
 	// Создать команду с участниками (создаёт/обновляет пользователей)
 	// (POST /team/add)
 	PostTeamAdd(c *gin.Context)
+	// Деактивировать всех пользователей команды
+	// (POST /team/deactivate)
+	PostTeamDeactivate(c *gin.Context)
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(c *gin.Context, params GetTeamGetParams)
@@ -1550,6 +1708,19 @@ func (siw *ServerInterfaceWrapper) PostTeamAdd(c *gin.Context) {
 	}
 
 	siw.Handler.PostTeamAdd(c)
+}
+
+// PostTeamDeactivate operation middleware
+func (siw *ServerInterfaceWrapper) PostTeamDeactivate(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostTeamDeactivate(c)
 }
 
 // GetTeamGet operation middleware
@@ -1695,6 +1866,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/pullRequest/merge", wrapper.PostPullRequestMerge)
 	router.POST(options.BaseURL+"/pullRequest/reassign", wrapper.PostPullRequestReassign)
 	router.POST(options.BaseURL+"/team/add", wrapper.PostTeamAdd)
+	router.POST(options.BaseURL+"/team/deactivate", wrapper.PostTeamDeactivate)
 	router.GET(options.BaseURL+"/team/get", wrapper.GetTeamGet)
 	router.GET(options.BaseURL+"/team/stats", wrapper.GetTeamStats)
 	router.GET(options.BaseURL+"/users/getReview", wrapper.GetUsersGetReview)
@@ -1834,6 +2006,32 @@ func (response PostTeamAdd400JSONResponse) VisitPostTeamAddResponse(w http.Respo
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostTeamDeactivateRequestObject struct {
+	Body *PostTeamDeactivateJSONRequestBody
+}
+
+type PostTeamDeactivateResponseObject interface {
+	VisitPostTeamDeactivateResponse(w http.ResponseWriter) error
+}
+
+type PostTeamDeactivate200JSONResponse Team
+
+func (response PostTeamDeactivate200JSONResponse) VisitPostTeamDeactivateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostTeamDeactivate404JSONResponse ErrorResponse
+
+func (response PostTeamDeactivate404JSONResponse) VisitPostTeamDeactivateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetTeamGetRequestObject struct {
 	Params GetTeamGetParams
 }
@@ -1965,6 +2163,9 @@ type StrictServerInterface interface {
 	// Создать команду с участниками (создаёт/обновляет пользователей)
 	// (POST /team/add)
 	PostTeamAdd(ctx context.Context, request PostTeamAddRequestObject) (PostTeamAddResponseObject, error)
+	// Деактивировать всех пользователей команды
+	// (POST /team/deactivate)
+	PostTeamDeactivate(ctx context.Context, request PostTeamDeactivateRequestObject) (PostTeamDeactivateResponseObject, error)
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(ctx context.Context, request GetTeamGetRequestObject) (GetTeamGetResponseObject, error)
@@ -2116,6 +2317,39 @@ func (sh *strictHandler) PostTeamAdd(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(PostTeamAddResponseObject); ok {
 		if err := validResponse.VisitPostTeamAddResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostTeamDeactivate operation middleware
+func (sh *strictHandler) PostTeamDeactivate(ctx *gin.Context) {
+	var request PostTeamDeactivateRequestObject
+
+	var body PostTeamDeactivateJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PostTeamDeactivate(ctx, request.(PostTeamDeactivateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostTeamDeactivate")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PostTeamDeactivateResponseObject); ok {
+		if err := validResponse.VisitPostTeamDeactivateResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

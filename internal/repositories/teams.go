@@ -103,6 +103,53 @@ func (s *Storage) GetTeam(
 	return team, nil
 }
 
+// Деактивирует пользователей команды
+func (s *Storage) DeactivateTeam(
+	ctx context.Context,
+	teamName string,
+) error {
+	const op = "repositories.postgres.DeactivateTeam"
+
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
+	// Получаем ID команды
+	getTeamID := conn.QueryRow(
+		ctx,
+		`
+		SELECT id
+		FROM teams
+		WHERE team_name = $1
+		`,
+		teamName,
+	)
+
+	var teamID int64
+	err := getTeamID.Scan(&teamID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Деактивируем всех пользователей данной команды
+	_, err = conn.Exec(
+		ctx,
+		`
+		UPDATE users
+		SET is_active = FALSE
+		WHERE team_id = $1;
+		`,
+		teamID,
+	)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
 // Получает статистику пул реквестов команды
 func (s *Storage) GetTeamsPullRequests(
 	ctx context.Context,

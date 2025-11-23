@@ -22,6 +22,10 @@ type PRAssignment interface {
 		ctx context.Context,
 		teamName string,
 	) (models.Team, error)
+	DeactivateTeam(
+		ctx context.Context,
+		teamName string,
+	) (models.Team, error)
 
 	// Методы пользователя
 	SetIsActive(
