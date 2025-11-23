@@ -3,25 +3,27 @@ version: '3'
 vars:
   COMPOSE_FILE: docker-compose.yml
   TEST_COMPOSE_FILE: docker-compose.test.yml
+  TEST_SERVICE_CONTAINER_NAME: pr-assignment
 
 tasks:
   up:    
     desc: "Собрать и запустить сервис"
     cmds:
-      - docker-compose -f {{.COMPOSE_FILE}} up -d --build
+      - docker compose -f {{.COMPOSE_FILE}} up -d --build
 
   logs:    
     desc: "Посмотреть логи"
     cmds:
-      - docker-compose -f {{.COMPOSE_FILE}} logs
+      - docker compose -f {{.COMPOSE_FILE}} logs
 
   down:    
     desc: "Остановить сервис"
     cmds:
-      - docker-compose -f {{.COMPOSE_FILE}} down
+      - docker compose -f {{.COMPOSE_FILE}} down
 
   tests:
     desc: "Провести интеграционное тестирование"
     cmds:
-      - docker-compose -f {{.TEST_COMPOSE_FILE}} up -d --build
-      - docker-compose -f {{.TEST_COMPOSE_FILE}} exec ./tests
+      - docker compose -f {{.TEST_COMPOSE_FILE}} up -d --build
+      - docker compose exec {{.TEST_SERVICE_CONTAINER_NAME}} ./tests
+      - docker compose -f {{.TEST_COMPOSE_FILE}} down
