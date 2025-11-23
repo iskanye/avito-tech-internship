@@ -163,7 +163,7 @@ func (a *PRAssignment) ReassignPullRequest(
 		}
 
 		// Получаем пул реквест
-		pullRequest, err := a.prProvider.GetPullRequest(ctx, pullRequestID)
+		pullRequest, err = a.prProvider.GetPullRequest(ctx, pullRequestID)
 		if err != nil {
 			log.Error("Failed to get PR",
 				slog.String("err", err.Error()),
