@@ -17,7 +17,7 @@ COPY --from=builder /bin/prassignment ./
 COPY --from=builder /bin/migrator ./
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/docker-entrypoint.sh ./
+COPY --from=builder /app/scripts/docker-entrypoint.sh ./
 
 EXPOSE 8080
 ENTRYPOINT ["/bin/sh", "./docker-entrypoint.sh"]
