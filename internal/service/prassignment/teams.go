@@ -142,7 +142,7 @@ func (a *PRAssignment) DeactivateTeam(
 func (a *PRAssignment) ReassignTeam(
 	ctx context.Context,
 	teamName string,
-) error {
+) ([]string, error) {
 	const op = "service.PRAssignment.ReassignTeam"
 
 	log := a.log.With(
@@ -160,11 +160,12 @@ func (a *PRAssignment) ReassignTeam(
 		)
 
 		if errors.Is(err, repositories.ErrNotFound) {
-			return ErrNotFound
+			return nil, ErrNotFound
 		}
-		return fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
+	var replacedBy []string
 	for _, member := range team.Members {
 		if !member.IsActive {
 			// Начинаем транзакцию
@@ -180,11 +181,12 @@ func (a *PRAssignment) ReassignTeam(
 					errGroup.Go(func() error {
 						// Начинаем подтранзакци
 						return a.txManager.Do(errCtx, func(ctx context.Context) error {
-							_, err = a.revModifier.ReassignReviewer(ctx, pr.ID, member.UserID)
+							newReviewer, err := a.revModifier.ReassignReviewer(ctx, pr.ID, member.UserID)
 							if err != nil {
 								return err
 							}
 
+							replacedBy = append(replacedBy, newReviewer)
 							return nil
 						})
 					})
@@ -202,11 +204,14 @@ func (a *PRAssignment) ReassignTeam(
 					slog.String("err", err.Error()),
 				)
 
-				return fmt.Errorf("%s: %w", op, err)
+				return nil, fmt.Errorf("%s: %w", op, err)
 			}
 		}
 	}
-	return nil
+
+	log.Info("Reassigned successfully")
+
+	return replacedBy, nil
 }
 
 // Получает статистику команды

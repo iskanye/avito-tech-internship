@@ -134,6 +134,11 @@ type GetTeamGetParams struct {
 	TeamName TeamNameQuery `form:"team_name" json:"team_name"`
 }
 
+// PostTeamReassignJSONBody defines parameters for PostTeamReassign.
+type PostTeamReassignJSONBody struct {
+	TeamName string `json:"team_name"`
+}
+
 // GetTeamStatsParams defines parameters for GetTeamStats.
 type GetTeamStatsParams struct {
 	// TeamName Уникальное имя команды
@@ -166,6 +171,9 @@ type PostTeamAddJSONRequestBody = Team
 
 // PostTeamDeactivateJSONRequestBody defines body for PostTeamDeactivate for application/json ContentType.
 type PostTeamDeactivateJSONRequestBody PostTeamDeactivateJSONBody
+
+// PostTeamReassignJSONRequestBody defines body for PostTeamReassign for application/json ContentType.
+type PostTeamReassignJSONRequestBody PostTeamReassignJSONBody
 
 // PostUsersSetIsActiveJSONRequestBody defines body for PostUsersSetIsActive for application/json ContentType.
 type PostUsersSetIsActiveJSONRequestBody PostUsersSetIsActiveJSONBody
@@ -270,6 +278,11 @@ type ClientInterface interface {
 
 	// GetTeamGet request
 	GetTeamGet(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostTeamReassignWithBody request with any body
+	PostTeamReassignWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostTeamReassign(ctx context.Context, body PostTeamReassignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTeamStats request
 	GetTeamStats(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -405,6 +418,30 @@ func (c *Client) PostTeamDeactivate(ctx context.Context, body PostTeamDeactivate
 
 func (c *Client) GetTeamGet(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTeamGetRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostTeamReassignWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostTeamReassignRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostTeamReassign(ctx context.Context, body PostTeamReassignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostTeamReassignRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -708,6 +745,46 @@ func NewGetTeamGetRequest(server string, params *GetTeamGetParams) (*http.Reques
 	return req, nil
 }
 
+// NewPostTeamReassignRequest calls the generic PostTeamReassign builder with application/json body
+func NewPostTeamReassignRequest(server string, body PostTeamReassignJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostTeamReassignRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostTeamReassignRequestWithBody generates requests for PostTeamReassign with any type of body
+func NewPostTeamReassignRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/team/reassign")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetTeamStatsRequest generates requests for GetTeamStats
 func NewGetTeamStatsRequest(server string, params *GetTeamStatsParams) (*http.Request, error) {
 	var err error
@@ -909,6 +986,11 @@ type ClientWithResponsesInterface interface {
 	// GetTeamGetWithResponse request
 	GetTeamGetWithResponse(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*GetTeamGetResponse, error)
 
+	// PostTeamReassignWithBodyWithResponse request with any body
+	PostTeamReassignWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostTeamReassignResponse, error)
+
+	PostTeamReassignWithResponse(ctx context.Context, body PostTeamReassignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostTeamReassignResponse, error)
+
 	// GetTeamStatsWithResponse request
 	GetTeamStatsWithResponse(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*GetTeamStatsResponse, error)
 
@@ -1066,6 +1148,31 @@ func (r GetTeamGetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetTeamGetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostTeamReassignResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		ReplacedBy []string `json:"replaced_by"`
+	}
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostTeamReassignResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostTeamReassignResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1246,6 +1353,23 @@ func (c *ClientWithResponses) GetTeamGetWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseGetTeamGetResponse(rsp)
+}
+
+// PostTeamReassignWithBodyWithResponse request with arbitrary body returning *PostTeamReassignResponse
+func (c *ClientWithResponses) PostTeamReassignWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostTeamReassignResponse, error) {
+	rsp, err := c.PostTeamReassignWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostTeamReassignResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostTeamReassignWithResponse(ctx context.Context, body PostTeamReassignJSONRequestBody, reqEditors ...RequestEditorFn) (*PostTeamReassignResponse, error) {
+	rsp, err := c.PostTeamReassign(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostTeamReassignResponse(rsp)
 }
 
 // GetTeamStatsWithResponse request returning *GetTeamStatsResponse
@@ -1506,6 +1630,41 @@ func ParseGetTeamGetResponse(rsp *http.Response) (*GetTeamGetResponse, error) {
 	return response, nil
 }
 
+// ParsePostTeamReassignResponse parses an HTTP response from a PostTeamReassignWithResponse call
+func ParsePostTeamReassignResponse(rsp *http.Response) (*PostTeamReassignResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostTeamReassignResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			ReplacedBy []string `json:"replaced_by"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetTeamStatsResponse parses an HTTP response from a GetTeamStatsWithResponse call
 func ParseGetTeamStatsResponse(rsp *http.Response) (*GetTeamStatsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1638,6 +1797,9 @@ type ServerInterface interface {
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(c *gin.Context, params GetTeamGetParams)
+	// Переназначает всех неактивных пользователей команды
+	// (POST /team/reassign)
+	PostTeamReassign(c *gin.Context)
 	// Получить статистику по команде
 	// (GET /team/stats)
 	GetTeamStats(c *gin.Context, params GetTeamStatsParams)
@@ -1756,6 +1918,19 @@ func (siw *ServerInterfaceWrapper) GetTeamGet(c *gin.Context) {
 	siw.Handler.GetTeamGet(c, params)
 }
 
+// PostTeamReassign operation middleware
+func (siw *ServerInterfaceWrapper) PostTeamReassign(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.PostTeamReassign(c)
+}
+
 // GetTeamStats operation middleware
 func (siw *ServerInterfaceWrapper) GetTeamStats(c *gin.Context) {
 
@@ -1868,6 +2043,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/team/add", wrapper.PostTeamAdd)
 	router.POST(options.BaseURL+"/team/deactivate", wrapper.PostTeamDeactivate)
 	router.GET(options.BaseURL+"/team/get", wrapper.GetTeamGet)
+	router.POST(options.BaseURL+"/team/reassign", wrapper.PostTeamReassign)
 	router.GET(options.BaseURL+"/team/stats", wrapper.GetTeamStats)
 	router.GET(options.BaseURL+"/users/getReview", wrapper.GetUsersGetReview)
 	router.POST(options.BaseURL+"/users/setIsActive", wrapper.PostUsersSetIsActive)
@@ -2058,6 +2234,34 @@ func (response GetTeamGet404JSONResponse) VisitGetTeamGetResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PostTeamReassignRequestObject struct {
+	Body *PostTeamReassignJSONRequestBody
+}
+
+type PostTeamReassignResponseObject interface {
+	VisitPostTeamReassignResponse(w http.ResponseWriter) error
+}
+
+type PostTeamReassign200JSONResponse struct {
+	ReplacedBy []string `json:"replaced_by"`
+}
+
+func (response PostTeamReassign200JSONResponse) VisitPostTeamReassignResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PostTeamReassign404JSONResponse ErrorResponse
+
+func (response PostTeamReassign404JSONResponse) VisitPostTeamReassignResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetTeamStatsRequestObject struct {
 	Params GetTeamStatsParams
 }
@@ -2169,6 +2373,9 @@ type StrictServerInterface interface {
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(ctx context.Context, request GetTeamGetRequestObject) (GetTeamGetResponseObject, error)
+	// Переназначает всех неактивных пользователей команды
+	// (POST /team/reassign)
+	PostTeamReassign(ctx context.Context, request PostTeamReassignRequestObject) (PostTeamReassignResponseObject, error)
 	// Получить статистику по команде
 	// (GET /team/stats)
 	GetTeamStats(ctx context.Context, request GetTeamStatsRequestObject) (GetTeamStatsResponseObject, error)
@@ -2377,6 +2584,39 @@ func (sh *strictHandler) GetTeamGet(ctx *gin.Context, params GetTeamGetParams) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetTeamGetResponseObject); ok {
 		if err := validResponse.VisitGetTeamGetResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostTeamReassign operation middleware
+func (sh *strictHandler) PostTeamReassign(ctx *gin.Context) {
+	var request PostTeamReassignRequestObject
+
+	var body PostTeamReassignJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		ctx.Status(http.StatusBadRequest)
+		ctx.Error(err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.PostTeamReassign(ctx, request.(PostTeamReassignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostTeamReassign")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(PostTeamReassignResponseObject); ok {
+		if err := validResponse.VisitPostTeamReassignResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

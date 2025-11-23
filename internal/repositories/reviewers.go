@@ -147,6 +147,7 @@ func (s *Storage) ReassignReviewer(
 		SELECT u.id 
 		FROM users u
 		WHERE 
+			u.is_active = TRUE AND
 			u.team_id = (
 				SELECT team_id 
 				FROM users 

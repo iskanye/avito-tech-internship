@@ -236,6 +236,44 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /team/reassign:
+    post:
+      tags: [Teams]
+      summary: Переназначает всех неактивных пользователей команды
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ team_name ]
+              properties:
+                team_name: { type: string }
+            example:
+              team_name: backend
+      responses:
+        '200':
+          description: Пользователи переназначены
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [replaced_by]
+                properties:
+                  replaced_by:
+                    type: array
+                    items: 
+                      type: string
+              example:
+                replaced_by:
+                  - u1
+                  - u2
+                  - u3
+        '404':
+          description: Команда не найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   /team/stats:
     get:
