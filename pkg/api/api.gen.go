@@ -78,6 +78,12 @@ type PullRequestShort struct {
 // PullRequestShortStatus defines model for PullRequestShort.Status.
 type PullRequestShortStatus string
 
+// Reassignment defines model for Reassignment.
+type Reassignment struct {
+	NewReviewer string `json:"new_reviewer"`
+	OldReviewer string `json:"old_reviewer"`
+}
+
 // Team defines model for Team.
 type Team struct {
 	Members  []TeamMember `json:"members"`
@@ -1158,7 +1164,7 @@ type PostTeamReassignResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *struct {
-		ReplacedBy []string `json:"replaced_by"`
+		Reassignments []Reassignment `json:"reassignments"`
 	}
 	JSON404 *ErrorResponse
 }
@@ -1646,7 +1652,7 @@ func ParsePostTeamReassignResponse(rsp *http.Response) (*PostTeamReassignRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
-			ReplacedBy []string `json:"replaced_by"`
+			Reassignments []Reassignment `json:"reassignments"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -2243,7 +2249,7 @@ type PostTeamReassignResponseObject interface {
 }
 
 type PostTeamReassign200JSONResponse struct {
-	ReplacedBy []string `json:"replaced_by"`
+	Reassignments []Reassignment `json:"reassignments"`
 }
 
 func (response PostTeamReassign200JSONResponse) VisitPostTeamReassignResponse(w http.ResponseWriter) error {

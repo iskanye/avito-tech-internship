@@ -120,6 +120,12 @@ components:
         status:
           type: string
           enum: [OPEN, MERGED]
+    Reassignment:
+      type: object
+      required: [ old_reviewer, new_reviewer ]
+      properties: 
+        old_reviewer: { type: string }
+        new_reviewer: { type: string }
 
 paths:
   /team/add:
@@ -258,17 +264,16 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [replaced_by]
+                required: [ reassignments ]
                 properties:
-                  replaced_by:
+                  reassignments:
                     type: array
-                    items: 
-                      type: string
+                    items:
+                      $ref: '#/components/schemas/Reassignment'
               example:
-                replaced_by:
-                  - u1
-                  - u2
-                  - u3
+                reassignments:
+                  - old_reviewer: u1
+                    new_reviewer: u2
         '404':
           description: Команда не найдена
           content:

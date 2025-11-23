@@ -89,7 +89,7 @@ func (s *serverAPI) PostTeamReassign(
 	c context.Context,
 	req api.PostTeamReassignRequestObject,
 ) (api.PostTeamReassignResponseObject, error) {
-	replacedBy, err := s.assign.ReassignTeam(c, req.Body.TeamName)
+	reassignments, err := s.assign.ReassignTeam(c, req.Body.TeamName)
 	if errors.Is(err, prassignment.ErrNotFound) {
 		response := api.PostTeamReassign404JSONResponse{}
 		response.Error.Code = api.NOTFOUND
@@ -101,8 +101,14 @@ func (s *serverAPI) PostTeamReassign(
 	}
 
 	response := api.PostTeamReassign200JSONResponse{
-		ReplacedBy: replacedBy,
+		Reassignments: make([]api.Reassignment, len(reassignments)),
 	}
+
+	for i := range reassignments {
+		response.Reassignments[i].OldReviewer = reassignments[i].OldReviewer
+		response.Reassignments[i].NewReviewer = reassignments[i].NewReviewer
+	}
+
 	return response, nil
 }
 

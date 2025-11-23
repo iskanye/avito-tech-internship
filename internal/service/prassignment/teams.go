@@ -142,7 +142,7 @@ func (a *PRAssignment) DeactivateTeam(
 func (a *PRAssignment) ReassignTeam(
 	ctx context.Context,
 	teamName string,
-) ([]string, error) {
+) ([]models.Reassignment, error) {
 	const op = "service.PRAssignment.ReassignTeam"
 
 	log := a.log.With(
@@ -167,7 +167,7 @@ func (a *PRAssignment) ReassignTeam(
 
 	// Проходимся по каждом члену команды и если он неактивный, то переназначаем
 	// его во всех пул реквестах где он ревьювер
-	replacedBy := make([]string, 0)
+	reassignments := make([]models.Reassignment, 0)
 	for _, member := range team.Members {
 		if !member.IsActive {
 			pullRequests, err := a.GetReview(ctx, member.UserID)
@@ -195,7 +195,10 @@ func (a *PRAssignment) ReassignTeam(
 								return err
 							}
 
-							replacedBy = append(replacedBy, newReviewer)
+							reassignments = append(reassignments, models.Reassignment{
+								OldReviewer: member.UserID,
+								NewReviewer: newReviewer,
+							})
 							return nil
 						})
 					})
@@ -216,7 +219,7 @@ func (a *PRAssignment) ReassignTeam(
 
 	log.Info("Reassigned successfully")
 
-	return replacedBy, nil
+	return reassignments, nil
 }
 
 // Получает статистику команды

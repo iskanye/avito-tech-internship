@@ -29,7 +29,7 @@ type PRAssignment interface {
 	ReassignTeam(
 		ctx context.Context,
 		teamName string,
-	) ([]string, error)
+	) ([]models.Reassignment, error)
 
 	// Методы пользователя
 	SetIsActive(
