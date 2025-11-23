@@ -46,7 +46,7 @@ func New(
 		log,
 		txManager,
 		storage, storage, storage,
-		storage, storage,
+		storage, storage, storage,
 		storage, storage, storage,
 		storage, storage,
 	)

@@ -129,6 +129,12 @@ type GetTeamGetParams struct {
 	TeamName TeamNameQuery `form:"team_name" json:"team_name"`
 }
 
+// GetTeamStatsParams defines parameters for GetTeamStats.
+type GetTeamStatsParams struct {
+	// TeamName Уникальное имя команды
+	TeamName TeamNameQuery `form:"team_name" json:"team_name"`
+}
+
 // GetUsersGetReviewParams defines parameters for GetUsersGetReview.
 type GetUsersGetReviewParams struct {
 	// UserId Идентификатор пользователя
@@ -252,6 +258,9 @@ type ClientInterface interface {
 	// GetTeamGet request
 	GetTeamGet(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetTeamStats request
+	GetTeamStats(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUsersGetReview request
 	GetUsersGetReview(ctx context.Context, params *GetUsersGetReviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -359,6 +368,18 @@ func (c *Client) PostTeamAdd(ctx context.Context, body PostTeamAddJSONRequestBod
 
 func (c *Client) GetTeamGet(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTeamGetRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetTeamStats(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetTeamStatsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -610,6 +631,51 @@ func NewGetTeamGetRequest(server string, params *GetTeamGetParams) (*http.Reques
 	return req, nil
 }
 
+// NewGetTeamStatsRequest generates requests for GetTeamStats
+func NewGetTeamStatsRequest(server string, params *GetTeamStatsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/team/stats/")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "team_name", runtime.ParamLocationQuery, params.TeamName); err != nil {
+			return nil, err
+		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+			return nil, err
+		} else {
+			for k, v := range parsed {
+				for _, v2 := range v {
+					queryValues.Add(k, v2)
+				}
+			}
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetUsersGetReviewRequest generates requests for GetUsersGetReview
 func NewGetUsersGetReviewRequest(server string, params *GetUsersGetReviewParams) (*http.Request, error) {
 	var err error
@@ -761,6 +827,9 @@ type ClientWithResponsesInterface interface {
 	// GetTeamGetWithResponse request
 	GetTeamGetWithResponse(ctx context.Context, params *GetTeamGetParams, reqEditors ...RequestEditorFn) (*GetTeamGetResponse, error)
 
+	// GetTeamStatsWithResponse request
+	GetTeamStatsWithResponse(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*GetTeamStatsResponse, error)
+
 	// GetUsersGetReviewWithResponse request
 	GetUsersGetReviewWithResponse(ctx context.Context, params *GetUsersGetReviewParams, reqEditors ...RequestEditorFn) (*GetUsersGetReviewResponse, error)
 
@@ -898,6 +967,37 @@ func (r GetTeamGetResponse) StatusCode() int {
 	return 0
 }
 
+type GetTeamStatsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		ActiveUsers        int    `json:"active_users"`
+		InactiveUsers      int    `json:"inactive_users"`
+		MergedPullRequests int    `json:"merged_pull_requests"`
+		OpenPullRequests   int    `json:"open_pull_requests"`
+		PullRequests       int    `json:"pull_requests"`
+		TeamName           string `json:"team_name"`
+		Users              int    `json:"users"`
+	}
+	JSON404 *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetTeamStatsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetTeamStatsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetUsersGetReviewResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1024,6 +1124,15 @@ func (c *ClientWithResponses) GetTeamGetWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseGetTeamGetResponse(rsp)
+}
+
+// GetTeamStatsWithResponse request returning *GetTeamStatsResponse
+func (c *ClientWithResponses) GetTeamStatsWithResponse(ctx context.Context, params *GetTeamStatsParams, reqEditors ...RequestEditorFn) (*GetTeamStatsResponse, error) {
+	rsp, err := c.GetTeamStats(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetTeamStatsResponse(rsp)
 }
 
 // GetUsersGetReviewWithResponse request returning *GetUsersGetReviewResponse
@@ -1242,6 +1351,47 @@ func ParseGetTeamGetResponse(rsp *http.Response) (*GetTeamGetResponse, error) {
 	return response, nil
 }
 
+// ParseGetTeamStatsResponse parses an HTTP response from a GetTeamStatsWithResponse call
+func ParseGetTeamStatsResponse(rsp *http.Response) (*GetTeamStatsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetTeamStatsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			ActiveUsers        int    `json:"active_users"`
+			InactiveUsers      int    `json:"inactive_users"`
+			MergedPullRequests int    `json:"merged_pull_requests"`
+			OpenPullRequests   int    `json:"open_pull_requests"`
+			PullRequests       int    `json:"pull_requests"`
+			TeamName           string `json:"team_name"`
+			Users              int    `json:"users"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetUsersGetReviewResponse parses an HTTP response from a GetUsersGetReviewWithResponse call
 func ParseGetUsersGetReviewResponse(rsp *http.Response) (*GetUsersGetReviewResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1330,6 +1480,9 @@ type ServerInterface interface {
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(c *gin.Context, params GetTeamGetParams)
+	// Получить статистику по команде
+	// (GET /team/stats/)
+	GetTeamStats(c *gin.Context, params GetTeamStatsParams)
 	// Получить PR'ы, где пользователь назначен ревьювером
 	// (GET /users/getReview)
 	GetUsersGetReview(c *gin.Context, params GetUsersGetReviewParams)
@@ -1432,6 +1585,39 @@ func (siw *ServerInterfaceWrapper) GetTeamGet(c *gin.Context) {
 	siw.Handler.GetTeamGet(c, params)
 }
 
+// GetTeamStats operation middleware
+func (siw *ServerInterfaceWrapper) GetTeamStats(c *gin.Context) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTeamStatsParams
+
+	// ------------- Required query parameter "team_name" -------------
+
+	if paramValue := c.Query("team_name"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandler(c, fmt.Errorf("Query argument team_name is required, but not found"), http.StatusBadRequest)
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "team_name", c.Request.URL.Query(), &params.TeamName)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter team_name: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetTeamStats(c, params)
+}
+
 // GetUsersGetReview operation middleware
 func (siw *ServerInterfaceWrapper) GetUsersGetReview(c *gin.Context) {
 
@@ -1510,6 +1696,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/pullRequest/reassign", wrapper.PostPullRequestReassign)
 	router.POST(options.BaseURL+"/team/add", wrapper.PostTeamAdd)
 	router.GET(options.BaseURL+"/team/get", wrapper.GetTeamGet)
+	router.GET(options.BaseURL+"/team/stats/", wrapper.GetTeamStats)
 	router.GET(options.BaseURL+"/users/getReview", wrapper.GetUsersGetReview)
 	router.POST(options.BaseURL+"/users/setIsActive", wrapper.PostUsersSetIsActive)
 }
@@ -1673,6 +1860,40 @@ func (response GetTeamGet404JSONResponse) VisitGetTeamGetResponse(w http.Respons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetTeamStatsRequestObject struct {
+	Params GetTeamStatsParams
+}
+
+type GetTeamStatsResponseObject interface {
+	VisitGetTeamStatsResponse(w http.ResponseWriter) error
+}
+
+type GetTeamStats200JSONResponse struct {
+	ActiveUsers        int    `json:"active_users"`
+	InactiveUsers      int    `json:"inactive_users"`
+	MergedPullRequests int    `json:"merged_pull_requests"`
+	OpenPullRequests   int    `json:"open_pull_requests"`
+	PullRequests       int    `json:"pull_requests"`
+	TeamName           string `json:"team_name"`
+	Users              int    `json:"users"`
+}
+
+func (response GetTeamStats200JSONResponse) VisitGetTeamStatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetTeamStats404JSONResponse ErrorResponse
+
+func (response GetTeamStats404JSONResponse) VisitGetTeamStatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetUsersGetReviewRequestObject struct {
 	Params GetUsersGetReviewParams
 }
@@ -1747,6 +1968,9 @@ type StrictServerInterface interface {
 	// Получить команду с участниками
 	// (GET /team/get)
 	GetTeamGet(ctx context.Context, request GetTeamGetRequestObject) (GetTeamGetResponseObject, error)
+	// Получить статистику по команде
+	// (GET /team/stats/)
+	GetTeamStats(ctx context.Context, request GetTeamStatsRequestObject) (GetTeamStatsResponseObject, error)
 	// Получить PR'ы, где пользователь назначен ревьювером
 	// (GET /users/getReview)
 	GetUsersGetReview(ctx context.Context, request GetUsersGetReviewRequestObject) (GetUsersGetReviewResponseObject, error)
@@ -1919,6 +2143,33 @@ func (sh *strictHandler) GetTeamGet(ctx *gin.Context, params GetTeamGetParams) {
 		ctx.Status(http.StatusInternalServerError)
 	} else if validResponse, ok := response.(GetTeamGetResponseObject); ok {
 		if err := validResponse.VisitGetTeamGetResponse(ctx.Writer); err != nil {
+			ctx.Error(err)
+		}
+	} else if response != nil {
+		ctx.Error(fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTeamStats operation middleware
+func (sh *strictHandler) GetTeamStats(ctx *gin.Context, params GetTeamStatsParams) {
+	var request GetTeamStatsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTeamStats(ctx, request.(GetTeamStatsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTeamStats")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		ctx.Error(err)
+		ctx.Status(http.StatusInternalServerError)
+	} else if validResponse, ok := response.(GetTeamStatsResponseObject); ok {
+		if err := validResponse.VisitGetTeamStatsResponse(ctx.Writer); err != nil {
 			ctx.Error(err)
 		}
 	} else if response != nil {

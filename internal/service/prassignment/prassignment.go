@@ -20,8 +20,9 @@ type PRAssignment struct {
 	userProvider UserProvider
 
 	// Объекты для взаимодействия с командами
-	teamCreator  TeamCreator
-	teamProvider TeamProvider
+	teamCreator    TeamCreator
+	teamProvider   TeamProvider
+	teamStatistics TeamStatistics
 
 	// Объекты для взаимодействия с пул реквестами
 	prCreator  PRCreator
@@ -79,6 +80,18 @@ type TeamProvider interface {
 	) (models.Team, error)
 }
 
+type TeamStatistics interface {
+	GetTeamsPullRequests(
+		ctx context.Context,
+		teamName string,
+	) (
+		pullRequests int,
+		openPullRequests int,
+		mergedPullRequests int,
+		err error,
+	)
+}
+
 type PRCreator interface {
 	CreatePullRequest(
 		ctx context.Context,
@@ -131,6 +144,7 @@ func New(
 
 	teamCreator TeamCreator,
 	teamProvider TeamProvider,
+	teamStatistics TeamStatistics,
 
 	prCreator PRCreator,
 	prModifier PRModifier,
@@ -147,8 +161,9 @@ func New(
 		userModifier: userModifier,
 		userProvider: userProvider,
 
-		teamCreator:  teamCreator,
-		teamProvider: teamProvider,
+		teamCreator:    teamCreator,
+		teamProvider:   teamProvider,
+		teamStatistics: teamStatistics,
 
 		prCreator:  prCreator,
 		prModifier: prModifier,
