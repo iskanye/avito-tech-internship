@@ -201,7 +201,7 @@ paths:
 
   /team/stats/:
     get:
-      tags: [Health]
+      tags: [Teams]
       summary: Получить статистику по команде
       parameters:
         - $ref: '#/components/parameters/TeamNameQuery'
