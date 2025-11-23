@@ -48,6 +48,12 @@ type PRAssignment interface {
 		pullRequestID string,
 		oldReviewerId string,
 	) (models.PullRequest, string, error)
+
+	// Методы статистики
+	TeamStats(
+		ctx context.Context,
+		teamName string,
+	) (models.TeamStats, error)
 }
 
 // Проверка на реализацию всех методов

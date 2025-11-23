@@ -199,6 +199,43 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  /team/stats/:
+    get:
+      tags: [Health]
+      summary: Получить статистику по команде
+      parameters:
+        - $ref: '#/components/parameters/TeamNameQuery'
+      responses:
+        '200':
+          description: Статистика команды
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ team_name, pull_requests, open_pull_requests, merged_pull_requests, users, active_users, active_users ]
+                properties:
+                  team_name: { type: string }
+                  pull_requests: { type: integer }
+                  open_pull_requests: { type: integer }
+                  merged_pull_requests: { type: integer }
+                  users: { type: integer }
+                  active_users: { type: integer }
+                  inactive_users: { type: integer }
+              example:
+                team_name: "backend"
+                pull_requests: 8
+                open_pull_requests: 7
+                merged_pull_requests: 1
+                users: 10
+                active_users: 5
+                inactive_users: 5
+                
+        '404':
+          description: Команда не найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   /users/setIsActive:
     post:
       tags: [Users]
