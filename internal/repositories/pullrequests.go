@@ -136,14 +136,12 @@ func (s *Storage) GetPullRequest(
 		prID,
 	)
 	if err != nil {
-		// Если ревьюверы не нашлись, то значит их и нет
-		if !errors.Is(err, pgx.ErrNoRows) {
-			pullRequest.AssignedReviewers = []string{}
-			return pullRequest, nil
-		}
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
+	defer getReviewers.Close()
 
+	// Если ревьюверы не нашлись, то значит их и нет
+	pullRequest.AssignedReviewers = []string{}
 	for getReviewers.Next() {
 		var reviewer string
 		err := getReviewers.Scan(&reviewer)
