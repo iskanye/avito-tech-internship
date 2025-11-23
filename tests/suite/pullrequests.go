@@ -23,6 +23,7 @@ func RandomPullRequest(authorID string) *api.PullRequest {
 		AuthorId:        authorID,
 		Status:          api.PullRequestStatusOPEN,
 		CreatedAt:       &now,
+		MergedAt:        &time.Time{},
 	}
 }
 
