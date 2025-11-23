@@ -370,8 +370,9 @@ func TestPullRequests_Merge_NotFound(t *testing.T) {
 func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
 	s, ctx := suite.New(t)
 
-	// Создаем команду из 4 активных человек, чтобы все учавствовали в пул реквесте
-	team := suite.RandomTeam(4, func() bool { return true })
+	// Создаем команду из 5 активных человек, чтобы все учавствовали в пул реквесте (5 неактивный)
+	team := suite.RandomTeam(5, func() bool { return true })
+	team.Members[4].IsActive = false
 
 	// Добавить команду
 	addTeamResp, err := s.Client.PostTeamAddWithResponse(ctx, *team)
@@ -399,7 +400,7 @@ func TestPullRequests_ReassignReviewer_Success(t *testing.T) {
 	busyMembers[addPullRequest.JSON201.Pr.AssignedReviewers[1]] = struct{}{}
 
 	var replacedBy string
-	for _, member := range team.Members {
+	for _, member := range team.Members[:5] {
 		if _, ok := busyMembers[member.UserId]; !ok {
 			replacedBy = member.UserId
 			break
