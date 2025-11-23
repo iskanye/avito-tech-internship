@@ -42,7 +42,8 @@ func (a *PRAssignment) AddTeam(
 		// Вставляем членов команды
 		for _, user := range team.Members {
 			user.TeamID = teamID
-			err := a.addTeamMember(ctx, user)
+			// Добавляем члена команды в БД
+			err := a.userCreator.AddUser(ctx, user)
 			if err != nil {
 				log.Error("Failed to add members",
 					slog.String("err", err.Error()),
@@ -61,21 +62,6 @@ func (a *PRAssignment) AddTeam(
 	log.Info("Successfully added team")
 
 	return team, nil
-}
-
-// Добавить члена команды в БД
-func (a *PRAssignment) addTeamMember(
-	ctx context.Context,
-	member models.User,
-) error {
-	// Добавляем члена команды
-	err := a.userCreator.AddUser(ctx, member)
-	if errors.Is(err, repositories.ErrUserExists) {
-		// Если член команды уже есть в БД - обновляем его данные
-		return a.userModifier.UpdateUser(ctx, member)
-	}
-
-	return err
 }
 
 // Получить команду по её названию

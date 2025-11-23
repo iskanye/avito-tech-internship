@@ -58,10 +58,6 @@ type UserProvider interface {
 }
 
 type UserModifier interface {
-	UpdateUser(
-		ctx context.Context,
-		user models.User,
-	) error
 	SetActive(
 		ctx context.Context,
 		userID string,

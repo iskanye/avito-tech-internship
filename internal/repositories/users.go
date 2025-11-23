@@ -7,10 +7,9 @@ import (
 
 	"github.com/iskanye/avito-tech-internship/internal/models"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Добавляет пользователя в БД.
+// Добавляет пользователя, либо обновляет его в БД.
 func (s *Storage) AddUser(
 	ctx context.Context,
 	user models.User,
@@ -20,57 +19,50 @@ func (s *Storage) AddUser(
 	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
 
 	// Вставляем ID в базу
+	_, err := conn.Exec(
+		ctx,
+		`
+		INSERT INTO users_id (user_id) 
+		VALUES ($1)
+		ON CONFLICT (user_id)
+		DO NOTHING;`,
+		user.UserID,
+	)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	// Получаем ID пользователя
 	getUserID := conn.QueryRow(
 		ctx,
-		"INSERT INTO users_id (user_id) VALUES ($1) RETURNING id;",
+		`
+		SELECT id
+		FROM users_id
+		WHERE user_id = $1;
+		`,
 		user.UserID,
 	)
 
 	var id int64
-	err := getUserID.Scan(&id)
+	err = getUserID.Scan(&id)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
-			return ErrUserExists
-		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	// Вставляем юзера
+	// Вставляем юзера либо обновляем его
 	_, err = conn.Exec(
 		ctx,
-		"INSERT INTO users (user_id, username, team_id, is_active) VALUES ($1, $2, $3, $4);",
+		`
+		INSERT INTO users (user_id, username, team_id, is_active) 
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id)
+		DO UPDATE SET
+			username = $2,
+			team_id = $3,
+			is_active = $4
+		;
+		`,
 		id, user.Username, user.TeamID, user.IsActive,
-	)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	return nil
-}
-
-// Обновить данные пользователя в БД
-func (s *Storage) UpdateUser(
-	ctx context.Context,
-	user models.User,
-) error {
-	const op = "repositories.postgres.AddUser"
-
-	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
-
-	// Получаем ID пользователя
-	id, err := s.getUserID(ctx, user.UserID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
-		}
-		return fmt.Errorf("%s: %w", op, err)
-	}
-
-	_, err = conn.Exec(
-		ctx,
-		"UPDATE users SET username = $1, team_id = $2, is_active = $3 WHERE id = $4",
-		user.Username, user.TeamID, user.IsActive, id,
 	)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
