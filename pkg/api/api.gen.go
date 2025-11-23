@@ -972,7 +972,7 @@ type GetTeamStatsResponse struct {
 	HTTPResponse *http.Response
 	JSON200      *struct {
 		ActiveUsers        int    `json:"active_users"`
-		InactiveUsers      *int   `json:"inactive_users,omitempty"`
+		InactiveUsers      int    `json:"inactive_users"`
 		MergedPullRequests int    `json:"merged_pull_requests"`
 		OpenPullRequests   int    `json:"open_pull_requests"`
 		PullRequests       int    `json:"pull_requests"`
@@ -1368,7 +1368,7 @@ func ParseGetTeamStatsResponse(rsp *http.Response) (*GetTeamStatsResponse, error
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest struct {
 			ActiveUsers        int    `json:"active_users"`
-			InactiveUsers      *int   `json:"inactive_users,omitempty"`
+			InactiveUsers      int    `json:"inactive_users"`
 			MergedPullRequests int    `json:"merged_pull_requests"`
 			OpenPullRequests   int    `json:"open_pull_requests"`
 			PullRequests       int    `json:"pull_requests"`
@@ -1870,7 +1870,7 @@ type GetTeamStatsResponseObject interface {
 
 type GetTeamStats200JSONResponse struct {
 	ActiveUsers        int    `json:"active_users"`
-	InactiveUsers      *int   `json:"inactive_users,omitempty"`
+	InactiveUsers      int    `json:"inactive_users"`
 	MergedPullRequests int    `json:"merged_pull_requests"`
 	OpenPullRequests   int    `json:"open_pull_requests"`
 	PullRequests       int    `json:"pull_requests"`

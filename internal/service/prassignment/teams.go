@@ -132,10 +132,20 @@ func (a *PRAssignment) TeamStats(
 
 		if user.IsActive {
 			stats.ActiveUsers++
-		} else {
-			stats.InactiveUsers++
 		}
 	}
+	stats.InactiveUsers = stats.Users - stats.ActiveUsers
+
+	// Получаем статистику пул реквестов
+	stats.PullRequests, stats.OpenPullRequests, stats.MergedPullRequests, err = a.teamStatistics.GetTeamsPullRequests(ctx, teamName)
+	if err != nil {
+		log.Error("Failed to get team PR stats",
+			slog.String("err", err.Error()),
+		)
+		return models.TeamStats{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("Got team stats successfully")
 
 	return stats, nil
 }

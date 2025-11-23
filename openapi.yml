@@ -212,7 +212,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [ team_name, pull_requests, open_pull_requests, merged_pull_requests, users, active_users, active_users ]
+                required: [ team_name, pull_requests, open_pull_requests, merged_pull_requests, users, active_users, inactive_users ]
                 properties:
                   team_name: { type: string }
                   pull_requests: { type: integer }

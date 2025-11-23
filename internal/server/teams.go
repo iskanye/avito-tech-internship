@@ -67,7 +67,26 @@ func (s *serverAPI) GetTeamStats(
 	c context.Context,
 	req api.GetTeamStatsRequestObject,
 ) (api.GetTeamStatsResponseObject, error) {
-	return nil, nil
+	stats, err := s.assign.TeamStats(c, req.Params.TeamName)
+	if errors.Is(err, prassignment.ErrNotFound) {
+		response := api.GetTeamStats404JSONResponse{}
+		response.Error.Code = api.NOTFOUND
+		response.Error.Message = err.Error()
+		return response, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.GetTeamStats200JSONResponse{}
+	response.TeamName = stats.TeamName
+	response.Users = stats.Users
+	response.ActiveUsers = stats.ActiveUsers
+	response.InactiveUsers = stats.InactiveUsers
+	response.PullRequests = stats.PullRequests
+	response.OpenPullRequests = stats.OpenPullRequests
+	response.MergedPullRequests = stats.MergedPullRequests
+	return response, nil
 }
 
 func convertTeamToApi(team *models.Team) *api.Team {

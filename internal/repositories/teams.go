@@ -102,3 +102,48 @@ func (s *Storage) GetTeam(
 	team.Members = members
 	return team, nil
 }
+
+// Получает статистику пул реквестов команды
+func (s *Storage) GetTeamsPullRequests(
+	ctx context.Context,
+	teamName string,
+) (int, int, int, error) {
+	const op = "repositories.postgres.GetTeamsPullRequests"
+
+	conn := s.getter.DefaultTrOrDB(ctx, s.pool)
+
+	// Получаем статусы пул реквестов команды
+	getPRStatuses, err := conn.Query(
+		ctx,
+		`
+		SELECT p.status
+		FROM pull_requests p
+		JOIN users u ON p.author_id = u.id
+		JOIN teams t ON u.team_id = t.id
+		WHERE t.team_name = $1
+		`,
+		teamName,
+	)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("%s: %w", op, err)
+	}
+	defer getPRStatuses.Close()
+
+	// Считаем их количество
+	var pullRequests, openPullRequests int
+	for getPRStatuses.Next() {
+		var status string
+		err := getPRStatuses.Scan(&status)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("%s: %w", op, err)
+		}
+
+		pullRequests++
+		if status == models.PULLREQUEST_OPEN {
+			openPullRequests++
+		}
+	}
+
+	mergedPullRequests := pullRequests - openPullRequests
+	return pullRequests, openPullRequests, mergedPullRequests, nil
+}
