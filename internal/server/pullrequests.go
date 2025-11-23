@@ -48,6 +48,7 @@ func (s *serverAPI) PostPullRequestCreate(
 			Status:            api.PullRequestStatus(pullRequest.Status),
 			AssignedReviewers: pullRequest.AssignedReviewers,
 			CreatedAt:         &pullRequest.CreatedAt,
+			MergedAt:          &pullRequest.MergedAt,
 		},
 	}
 
