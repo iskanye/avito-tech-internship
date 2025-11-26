@@ -126,7 +126,7 @@ func (s *Storage) ReassignReviewer(
 	err := getID.Scan(&prID, &authorID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrNotFound
+			return "", fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -135,7 +135,7 @@ func (s *Storage) ReassignReviewer(
 	oldReviewer, err := s.getUserID(ctx, oldReviewerID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrNotFound
+			return "", fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
@@ -168,7 +168,7 @@ func (s *Storage) ReassignReviewer(
 	if err != nil {
 		// Нету подходящего ревьювера
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrNoCandidates
+			return "", fmt.Errorf("%s: %w", op, ErrNoCandidates)
 		}
 		return "", fmt.Errorf("%s: %w", op, err)
 	}

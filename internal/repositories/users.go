@@ -99,7 +99,7 @@ func (s *Storage) GetUser(
 	err := res.Scan(&user.Username, &user.TeamName, &user.IsActive)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, ErrNotFound
+			return models.User{}, fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -121,7 +121,7 @@ func (s *Storage) SetActive(
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
+			return fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}

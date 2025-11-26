@@ -35,7 +35,7 @@ func (s *Storage) AddTeam(
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
-			return 0, ErrTeamExists
+			return 0, fmt.Errorf("%s: %w", op, ErrTeamExists)
 		}
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -63,7 +63,7 @@ func (s *Storage) GetTeam(
 	err := getTeamID.Scan(&teamID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.Team{}, ErrNotFound
+			return models.Team{}, fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return models.Team{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -127,7 +127,7 @@ func (s *Storage) DeactivateTeam(
 	err := getTeamID.Scan(&teamID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
+			return fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 
 		return fmt.Errorf("%s: %w", op, err)
@@ -172,6 +172,10 @@ func (s *Storage) GetTeamsPullRequests(
 		teamName,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, 0, 0, fmt.Errorf("%s: %w", op, ErrNotFound)
+		}
+
 		return 0, 0, 0, fmt.Errorf("%s: %w", op, err)
 	}
 	defer getPRStatuses.Close()

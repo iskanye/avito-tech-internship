@@ -24,7 +24,7 @@ func (s *Storage) CreatePullRequest(
 	id, err := s.getUserID(ctx, pullRequest.AuthorID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
+			return fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -41,7 +41,7 @@ func (s *Storage) CreatePullRequest(
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == UNIQUE_VIOLATION_CODE {
-			return ErrPRExists
+			return fmt.Errorf("%s: %w", op, ErrPRExists)
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -100,7 +100,7 @@ func (s *Storage) GetPullRequest(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.PullRequest{}, ErrNotFound
+			return models.PullRequest{}, fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return models.PullRequest{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -168,7 +168,7 @@ func (s *Storage) GetReview(
 	id, err := s.getUserID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -238,7 +238,7 @@ func (s *Storage) MergePullRequest(
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrNotFound
+			return fmt.Errorf("%s: %w", op, ErrNotFound)
 		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
